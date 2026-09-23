@@ -81,6 +81,12 @@ else
   lipo -create -output "$output_binary" "${binaries[@]}"
 fi
 chmod +x "$output_binary"
+# A caller may disable Cargo's release stripping to work around toolchain
+# failures in build-time proc-macro dylibs. Strip the finished executable so
+# the shipped artifact still meets the sidecar's symbol and size contract.
+if [[ "${CARGO_PROFILE_RELEASE_STRIP:-}" == "false" ]]; then
+  strip "$output_binary"
+fi
 "${ROOT}/scripts/verify-diff-sidecar-artifact.sh" "$output_binary" --archs "$requested_archs"
 
 if [[ -z "${TARGET_BUILD_DIR:-}" ]]; then
