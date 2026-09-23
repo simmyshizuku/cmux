@@ -10,6 +10,70 @@ import Testing
 
 @MainActor
 @Suite struct SidebarSearchFieldTests {
+    @Test func commandPasteReplacesSelectionAndUpdatesTheSearchBinding() throws {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 320, height: 100), styleMask: [.borderless], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        var query = "old query"
+        let coordinator = makeCoordinator(text: Binding(get: { query }, set: { query = $0 }))
+        let field = SidebarSearchField(frame: NSRect(x: 20, y: 20, width: 240, height: 24))
+        field.delegate = coordinator
+        field.stringValue = query
+        window.contentView?.addSubview(field)
+        #expect(window.makeFirstResponder(field))
+        let editor = try #require(field.currentEditor() as? NSTextView)
+        editor.setSelectedRange(NSRange(location: 0, length: editor.string.utf16.count))
+
+        let pasteboard = NSPasteboard.general
+        let savedItems = (pasteboard.pasteboardItems ?? []).map { item in
+            item.types.compactMap { type in item.data(forType: type).map { (type, $0) } }
+        }
+        defer {
+            pasteboard.clearContents()
+            pasteboard.writeObjects(savedItems.map { values in
+                let item = NSPasteboardItem()
+                for (type, data) in values { item.setData(data, forType: type) }
+                return item
+            })
+        }
+        pasteboard.clearContents()
+        pasteboard.setString("pasted 日本語", forType: .string)
+        let event = try editingEvent("v", keyCode: 9, window: window)
+
+        #expect(field.performKeyEquivalent(with: event))
+        #expect(editor.string == "pasted 日本語")
+        #expect(query == "pasted 日本語")
+        #expect(window.firstResponder === editor)
+    }
+
+    @Test func commandSelectAllBelongsOnlyToTheFocusedSearchField() throws {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 320, height: 100), styleMask: [.borderless], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        let field = SidebarSearchField(frame: NSRect(x: 20, y: 20, width: 240, height: 24))
+        let other = SidebarSearchField(frame: NSRect(x: 20, y: 50, width: 240, height: 24))
+        window.contentView?.addSubview(field)
+        window.contentView?.addSubview(other)
+        field.stringValue = "needle"
+        #expect(window.makeFirstResponder(field))
+        let editor = try #require(field.currentEditor() as? NSTextView)
+        editor.setSelectedRange(NSRange(location: 3, length: 0))
+        let event = try editingEvent("a", keyCode: 0, window: window)
+
+        #expect(!other.performKeyEquivalent(with: event))
+        #expect(editor.selectedRange() == NSRange(location: 3, length: 0))
+        #expect(field.performKeyEquivalent(with: event))
+        #expect(editor.selectedRange() == NSRange(location: 0, length: 6))
+    }
+
+    private func editingEvent(_ key: String, keyCode: UInt16, window: NSWindow) throws -> NSEvent {
+        try #require(NSEvent.keyEvent(
+            with: .keyDown, location: .zero, modifierFlags: [.command], timestamp: 0,
+            windowNumber: window.windowNumber, context: nil, characters: key,
+            charactersIgnoringModifiers: key, isARepeat: false, keyCode: keyCode
+        ))
+    }
+
     @Test func hoveringAnUnfocusedSearchFieldUsesTheTextCursor() throws {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 320, height: 100), styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false

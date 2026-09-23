@@ -1,4 +1,5 @@
 import XCTest
+import AppKit
 import Foundation
 import CoreGraphics
 import ImageIO
@@ -142,6 +143,48 @@ final class MenuKeyEquivalentRoutingUITests: XCTestCase {
             "directory-find-handled",
             "Expected Cmd+Shift+F to stay out of browser page content. data=\(loadGotoSplit() ?? [:])"
         )
+    }
+
+    func testDirectoryFindFocusAndPasteSurviveSidebarReopening() {
+        let app = XCUIApplication.cmuxTestApplication()
+        app.launchEnvironment["CMUX_SOCKET_PATH"] = socketPath
+        launchAndEnsureForeground(app)
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
+
+        let pasteboard = NSPasteboard.general
+        let savedItems = (pasteboard.pasteboardItems ?? []).map { item in
+            item.types.compactMap { type in item.data(forType: type).map { (type, $0) } }
+        }
+        defer {
+            pasteboard.clearContents()
+            pasteboard.writeObjects(savedItems.map { values in
+                let item = NSPasteboardItem()
+                for (type, data) in values { item.setData(data, forType: type) }
+                return item
+            })
+        }
+
+        for attempt in 0..<2 {
+            let close = app.buttons["RightSidebar.closeButton"].firstMatch
+            if close.exists { close.click() }
+            app.typeKey("f", modifierFlags: [.command, .shift])
+            let field = app.searchFields["FileExplorerSearchField"].firstMatch
+            XCTAssertTrue(field.waitForExistence(timeout: 6))
+            // No click on the field: the shortcut must establish editing focus.
+            app.typeText("old query")
+            XCTAssertTrue(waitForCondition(timeout: 4) { (field.value as? String) == "old query" })
+
+            let query = "pasted-query-\(attempt)"
+            pasteboard.clearContents()
+            pasteboard.setString(query, forType: .string)
+            app.typeKey("f", modifierFlags: [.command, .shift])
+            app.typeKey("v", modifierFlags: [.command])
+            XCTAssertTrue(waitForCondition(timeout: 4) { (field.value as? String) == query })
+
+            app.typeKey("a", modifierFlags: [.command])
+            app.typeKey(XCUIKeyboardKey.delete.rawValue, modifierFlags: [])
+            XCTAssertTrue(waitForCondition(timeout: 4) { (field.value as? String) == "" })
+        }
     }
 
     func testBrowserFirstFindShortcutDoesNotReplayUnclaimedCmdEIntoWebContentTwice() {
