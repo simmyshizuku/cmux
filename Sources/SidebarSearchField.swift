@@ -90,7 +90,25 @@ class SidebarSearchField: NSSearchField {
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        handleCommandSubmit(event) || super.performKeyEquivalent(with: event)
+        handleEditingKeyEquivalent(event) || handleCommandSubmit(event) || super.performKeyEquivalent(with: event)
+    }
+
+    /// Keep native editing commands with the active field editor before a
+    /// SwiftUI hosting view can claim the equivalent without performing it.
+    func handleEditingKeyEquivalent(_ event: NSEvent) -> Bool {
+        guard event.type == .keyDown,
+              event.modifierFlags.intersection([.command, .control, .option, .shift]) == .command,
+              let editor = currentEditor() as? NSTextView,
+              window?.firstResponder === editor else { return false }
+
+        switch KeyboardLayout.normalizedCharacters(for: event) {
+        case "a": editor.selectAll(nil)
+        case "c": editor.copy(nil)
+        case "x": editor.cut(nil)
+        case "v": editor.paste(nil)
+        default: return false
+        }
+        return true
     }
 
     func handleCommandSubmit(_ event: NSEvent) -> Bool {
