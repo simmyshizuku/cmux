@@ -3962,7 +3962,7 @@ struct ContentView: View {
                 proxy.size.height - 120
             )
 
-            ZStack(alignment: .top) {
+            ZStack(alignment: .topLeading) {
                 Color.clear
                     .ignoresSafeArea()
 
@@ -3972,7 +3972,7 @@ struct ContentView: View {
                     .allowsHitTesting(false)
                     .accessibilityIdentifier("CommandPaletteBackdrop")
 
-                VStack(spacing: 0) {
+                CommandPaletteFloatingPanel(containerSize: proxy.size, width: targetWidth) {
                     switch commandPaletteMode {
                     case .commands:
                         commandPaletteCommandListView
@@ -3987,18 +3987,6 @@ struct ContentView: View {
                         )
                     }
                 }
-                .frame(width: targetWidth)
-                .background(CommandPalettePanelHitRegion())
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color(nsColor: .windowBackgroundColor).opacity(0.98))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(Color(nsColor: .separatorColor).opacity(0.7), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.24), radius: 10, x: 0, y: 5)
-                .padding(.top, 40)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

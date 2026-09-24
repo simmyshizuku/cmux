@@ -69,6 +69,45 @@ final class MenuKeyEquivalentRoutingUITests: XCTestCase {
         XCTAssertEqual(firstResult.label, "PaletteView.swift")
     }
 
+    func testCommandPaletteDragPositionPersistsAcrossShortcutsAndRelaunch() throws {
+        let project = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "cmux-ui-test-palette-position-\(UUID().uuidString)", isDirectory: true
+        )
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: project) }
+
+        let app = launchWithBrowserSetup(workingDirectory: project.path)
+        app.typeKey("p", modifierFlags: [.command, .shift])
+        if app.state == .runningBackground { app.activate() }
+
+        let handle = app.descendants(matching: .any)["CommandPaletteDragHandle"].firstMatch
+        XCTAssertTrue(handle.waitForExistence(timeout: 8.0))
+        let initial = handle.frame
+        let mainWindow = app.windows.firstMatch
+        let horizontalMove: CGFloat = initial.midX < mainWindow.frame.midX ? 110 : -110
+        let start = handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.15, thenDragTo: start.withOffset(CGVector(dx: horizontalMove, dy: 0)))
+
+        XCTAssertTrue(
+            waitForCondition(timeout: 4.0) { abs(handle.frame.midX - initial.midX) > 60 },
+            "Dragging the palette handle should move the panel"
+        )
+        let movedX = handle.frame.midX
+
+        app.typeKey(XCUIKeyboardKey.escape.rawValue, modifierFlags: [])
+        app.typeKey("p", modifierFlags: [.command])
+        XCTAssertTrue(handle.waitForExistence(timeout: 8.0))
+        XCTAssertEqual(handle.frame.midX, movedX, accuracy: 15)
+        XCTAssertTrue(app.textFields["CommandPaletteSearchField"].exists)
+
+        app.terminate()
+        app.launch()
+        if app.state == .runningBackground { app.activate() }
+        app.typeKey("p", modifierFlags: [.command, .shift])
+        XCTAssertTrue(handle.waitForExistence(timeout: 8.0))
+        XCTAssertEqual(handle.frame.midX, movedX, accuracy: 20)
+    }
+
     func testCmdNWorksWhenWebViewFocusedAfterTabSwitch() {
         let app = launchWithBrowserSetup()
 
