@@ -3,6 +3,12 @@ import Testing
 
 @Suite("ShortcutAction numbered digit matching")
 struct ShortcutActionNumberedDigitTests {
+    @Test func goToFileAndWorkspaceHaveDistinctEditableDefaults() {
+        #expect(ShortcutAction.goToFile.defaultShortcut == StoredShortcut(first: ShortcutStroke(key: "p", command: true)))
+        #expect(ShortcutAction.goToWorkspace.defaultShortcut == StoredShortcut(first: ShortcutStroke(key: "p", command: true, option: true)))
+        #expect(ShortcutAction.goToFile.rawValue == "goToFile")
+    }
+
     @Test func onlyNumberedSelectionActionsUseDigitMatching() {
         for action in ShortcutAction.allCases {
             let expected = action == .selectSurfaceByNumber || action == .selectWorkspaceByNumber

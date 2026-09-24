@@ -74,7 +74,7 @@ extension KeyboardShortcutSettings.Action {
              .newWindow, .closeWindow, .toggleFullScreen, .quit,
              .toggleSidebar, .newTab, .newBrowserWorkspace, .newCloudWorkspace, .newCloudMachine,
              .saveLayoutTemplate, .openFolder,
-             .reopenPreviousSession, .goToWorkspace,
+             .reopenPreviousSession, .goToWorkspace, .goToFile,
              .commandPalette, .sendFeedback,
              .showNotifications, .jumpToUnread, .toggleUnread,
              .markOldestUnreadAndJumpNext,

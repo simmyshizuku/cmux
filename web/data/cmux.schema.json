@@ -1770,6 +1770,7 @@
               "openFolder",
               "reopenPreviousSession",
               "goToWorkspace",
+              "goToFile",
               "commandPalette",
               "commandPaletteNext",
               "commandPalettePrevious",

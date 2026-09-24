@@ -6036,6 +6036,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         )
     }
 
+    func requestCommandPaletteFiles(preferredWindow: NSWindow? = nil, source: String = "api.commandPaletteFiles") {
+        postCommandPaletteRequest(
+            kind: .files,
+            preferredWindow: preferredWindow,
+            source: source
+        )
+    }
+
     func requestCommandPaletteRenameTab(preferredWindow: NSWindow? = nil, source: String = "api.commandPaletteRenameTab") {
         postCommandPaletteRequest(
             kind: .renameTab,
@@ -12049,7 +12057,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 return
             }
 
-            guard let tab = tabManager.addWorkspaceIfActive() else { return }
+            let workingDirectory = env["CMUX_UI_TEST_GOTO_SPLIT_WORKING_DIRECTORY"]
+            guard let tab = tabManager.addWorkspaceIfActive(workingDirectory: workingDirectory) else { return }
             guard let initialPanelId = tab.focusedPanelId else {
                 self.writeGotoSplitTestData(["setupError": "Missing initial panel id"])
                 return
@@ -14696,6 +14705,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                 return true
             }
 
+            if matchConfiguredShortcut(event: event, action: .goToFile) {
+                let targetWindow = commandPaletteTargetWindow ?? event.window ?? shortcutRoutingActiveWindow
+                requestCommandPaletteFiles(preferredWindow: targetWindow, source: "shortcut.goToFile")
+                return true
+            }
+
             if !hasFocusedAddressBarInShortcutContext,
                matchConfiguredShortcut(event: event, action: .goToWorkspace) {
                 let targetWindow = commandPaletteTargetWindow ?? event.window ?? shortcutRoutingActiveWindow
@@ -14710,7 +14725,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
             if activeConfiguredShortcutChordPrefixForCurrentEvent == nil,
                !hasFocusedAddressBarInShortcutContext,
-               armConfiguredShortcutChordIfNeeded(event: event, actions: [.goToWorkspace]) {
+               armConfiguredShortcutChordIfNeeded(event: event, actions: [.goToFile, .goToWorkspace]) {
                 return true
             }
         }
@@ -14963,6 +14978,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             return true
         }
         if handleSavedLayoutShortcut(event) { return true }
+
+        if matchConfiguredShortcut(event: event, action: .goToFile) {
+            let targetWindow = commandPaletteTargetWindow ?? event.window ?? shortcutRoutingActiveWindow
+            requestCommandPaletteFiles(preferredWindow: targetWindow, source: "shortcut.goToFile")
+            return true
+        }
 
         if !hasFocusedAddressBarInShortcutContext,
            matchConfiguredShortcut(event: event, action: .goToWorkspace) {

@@ -252,3 +252,30 @@ struct FileSearchWorkspaceScopeTests {
         func cancel(clear: Bool) {}
     }
 }
+
+@Suite("Go to File index")
+struct GoToFileIndexTests {
+    @Test func listsHiddenFilesAndRespectsGitignore() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root.appendingPathComponent("Sources"), withIntermediateDirectories: true)
+        try Data().write(to: root.appendingPathComponent("Sources/PaletteView.swift"))
+        try Data().write(to: root.appendingPathComponent(".env"))
+        try Data().write(to: root.appendingPathComponent("ignored.txt"))
+        try Data("ignored.txt\n".utf8).write(to: root.appendingPathComponent(".gitignore"))
+
+        let executable = try #require(RipgrepExecutableResolver.resolve(configuredPath: nil))
+        let files = try await GoToFileIndex(executable: executable).files(in: root.path)
+        let paths = Set(files.map(\.relativePath))
+
+        #expect(paths.contains("Sources/PaletteView.swift"))
+        #expect(paths.contains(".env"))
+        #expect(!paths.contains("ignored.txt"))
+        #expect(GoToFileEntry(relativePath: "Sources/UI/PaletteView.swift").searchKeywords.contains("Palette View.swift"))
+        #expect(
+            files.first(where: { $0.relativePath == "Sources/PaletteView.swift" })?.absolutePath(in: root.path)
+                == root.appendingPathComponent("Sources/PaletteView.swift").path
+        )
+    }
+}

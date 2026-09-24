@@ -239,8 +239,8 @@ public struct CommandPaletteSearchOrchestrator: Sendable {
         return lhs.commandID < rhs.commandID
     }
 
-    /// Resolves preview matches: full-corpus search for the commands scope,
-    /// candidate-restricted Swift search for the switcher scope.
+    /// Resolves preview matches: full-corpus search for commands, and
+    /// candidate-restricted Swift search for switcher or file lists.
     public func previewSearchMatches(
         scope: CommandPaletteListScope,
         searchIndex: CommandPaletteNucleoSearchIndex<String>?,

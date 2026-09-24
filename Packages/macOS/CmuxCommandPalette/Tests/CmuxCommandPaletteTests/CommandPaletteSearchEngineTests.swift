@@ -7,6 +7,36 @@ import Testing
 // parallel execution would skew.
 @Suite(.serialized)
 struct CommandPaletteSearchEngineTests {
+    @Test func fuzzyFileSearchMatchesFilenameAndRelativePath() {
+        let entries = [
+            CommandPaletteSearchCorpusEntry(
+                payload: "file.palette",
+                rank: 0,
+                title: "PaletteView.swift",
+                searchableTexts: ["PaletteView.swift", "Sources/UI/PaletteView.swift", "Palette View.swift"]
+            ),
+            CommandPaletteSearchCorpusEntry(
+                payload: "file.parser",
+                rank: 1,
+                title: "Parser.swift",
+                searchableTexts: ["Parser.swift", "Sources/Parser.swift"]
+            ),
+        ]
+        let search = CommandPaletteSearchOrchestrator()
+        for query in ["palview", "ui/pal"] {
+            let results = search.resolvedSearchMatches(
+                searchIndex: nil,
+                searchCorpus: entries,
+                query: query,
+                usageHistory: [:],
+                queryIsEmpty: false,
+                historyTimestamp: 0,
+                resultLimit: 10
+            )
+            #expect(results.first?.commandID == "file.palette")
+        }
+    }
+
     private struct FixtureEntry {
         let id: String
         let rank: Int

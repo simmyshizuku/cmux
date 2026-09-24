@@ -132,9 +132,20 @@ export const shortcutCategories: ShortcutCategory[] = [
       { id: "openFolder", combos: [["⌘", "O"]], description: { en: "Open folder", ja: "フォルダを開く" } },
       {
         id: "goToWorkspace",
-        combos: [["⌘", "P"]],
+        combos: [["⌘", "⌥", "P"]],
         description: { en: "Go to workspace", ja: "ワークスペースへ移動" },
         note: { en: "workspace switcher", ja: "ワークスペーススイッチャー" },
+      },
+      {
+        id: "goToFile",
+        combos: [["⌘", "P"]],
+        description: {
+          en: "Go to file", ja: "ファイルへ移動", "zh-CN": "转到文件", "zh-TW": "前往檔案",
+          ko: "파일로 이동", de: "Zur Datei wechseln", es: "Ir al archivo", fr: "Accéder au fichier",
+          it: "Vai al file", da: "Gå til fil", pl: "Przejdź do pliku", ru: "Перейти к файлу",
+          bs: "Idi na datoteku", ar: "الانتقال إلى ملف", no: "Gå til fil", "pt-BR": "Ir para arquivo",
+          th: "ไปที่ไฟล์", tr: "Dosyaya git", km: "ទៅកាន់ឯកសារ", uk: "Перейти до файлу",
+        },
       },
       { id: "nextSidebarTab", combos: [["⌃", "⌘", "]"]], description: { en: "Next workspace", ja: "次のワークスペース" } },
       { id: "prevSidebarTab", combos: [["⌃", "⌘", "["]], description: { en: "Previous workspace", ja: "前のワークスペース" } },

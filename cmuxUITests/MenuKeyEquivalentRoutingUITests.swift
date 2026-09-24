@@ -33,6 +33,42 @@ final class MenuKeyEquivalentRoutingUITests: XCTestCase {
         try? FileManager.default.removeItem(atPath: socketPath)
     }
 
+    func testCmdPOpensFocusedGoToFilePickerFromBrowser() {
+        let fileManager = FileManager.default
+        let project = fileManager.temporaryDirectory.appendingPathComponent(
+            "cmux-ui-test-go-to-file-\(UUID().uuidString)", isDirectory: true
+        )
+        do {
+            try fileManager.createDirectory(at: project, withIntermediateDirectories: true)
+            try "struct PaletteView {}\n".write(
+                to: project.appendingPathComponent("PaletteView.swift"),
+                atomically: true,
+                encoding: .utf8
+            )
+        } catch {
+            XCTFail("Could not create file search fixture: \(error)")
+            return
+        }
+        defer { try? fileManager.removeItem(at: project) }
+
+        let app = launchWithBrowserSetup(workingDirectory: project.path)
+
+        app.typeKey("p", modifierFlags: [.command])
+        if app.state == .runningBackground {
+            app.activate()
+        }
+
+        let searchField = app.textFields["CommandPaletteSearchField"]
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8.0))
+        XCTAssertEqual(searchField.placeholderValue, "Search files by name")
+
+        app.typeText("palette")
+        XCTAssertEqual(searchField.value as? String, "palette")
+        let firstResult = app.buttons["CommandPaletteResultRow.0"]
+        XCTAssertTrue(firstResult.waitForExistence(timeout: 8.0))
+        XCTAssertEqual(firstResult.label, "PaletteView.swift")
+    }
+
     func testCmdNWorksWhenWebViewFocusedAfterTabSwitch() {
         let app = launchWithBrowserSetup()
 
@@ -549,7 +585,10 @@ final class MenuKeyEquivalentRoutingUITests: XCTestCase {
         )
     }
 
-    private func launchWithBrowserSetup(browserURL: String? = nil) -> XCUIApplication {
+    private func launchWithBrowserSetup(
+        browserURL: String? = nil,
+        workingDirectory: String? = nil
+    ) -> XCUIApplication {
         let app = XCUIApplication.cmuxTestApplication()
         app.launchEnvironment["CMUX_SOCKET_PATH"] = socketPath
         app.launchEnvironment["CMUX_UI_TEST_GOTO_SPLIT_SETUP"] = "1"
@@ -557,6 +596,9 @@ final class MenuKeyEquivalentRoutingUITests: XCTestCase {
         app.launchEnvironment["CMUX_UI_TEST_KEYEQUIV_PATH"] = keyequivPath
         if let browserURL {
             app.launchEnvironment["CMUX_UI_TEST_GOTO_SPLIT_BROWSER_URL"] = browserURL
+        }
+        if let workingDirectory {
+            app.launchEnvironment["CMUX_UI_TEST_GOTO_SPLIT_WORKING_DIRECTORY"] = workingDirectory
         }
         launchAndEnsureForeground(app)
 

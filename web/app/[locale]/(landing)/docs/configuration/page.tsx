@@ -141,6 +141,7 @@ function buildSettingsFileExample(t: ConfigurationTranslation) {
   // "shortcuts": {
   //   "bindings": {
   //     "toggleSidebar": "cmd+b",
+  //     "goToFile": "cmd+p",
   //     "toggleFileExplorer": "cmd+opt+b",
   //     "newTab": ["ctrl+b", "c"],
   //     "commandPalettePrevious": null

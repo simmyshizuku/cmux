@@ -840,6 +840,7 @@ struct SidebarUnreadSnapshotObserver: View {
 
 struct ContentView: View {
     private enum CommandPaletteTaskKey: Hashable, Sendable {
+        case fileIndex
         case searchIndexBuild
         case search
         case agentLauncherAvailability
@@ -947,6 +948,11 @@ struct ContentView: View {
     @State private var sidebarResizerCursorStabilizer = MainActorRepeatingActionScheduler()
     @State private var isCommandPalettePresented = false
     @State private var commandPaletteQuery: String = ""
+    @State private var commandPaletteDefaultListScope: CommandPaletteListScope = .switcher
+    @State private var goToFileEntries: [GoToFileEntry] = []
+    @State private var goToFileRootPath: String?
+    @State private var goToFileStatusText: String?
+    @State private var goToFileRevision: UInt64 = 0
     @State private var commandPaletteCurrentWorkSnapshot: CurrentWorkSnapshot?
     @State private var commandPaletteCurrentWorkRevision = 0
     @State private var commandPaletteMode: CommandPaletteMode = .commands
@@ -3200,6 +3206,16 @@ struct ContentView: View {
             openCommandPaletteSwitcher()
         })
 
+        view = AnyView(view.onReceive(NotificationCenter.default.publisher(for: .commandPaletteFilesRequested)) { notification in
+            guard Self.shouldHandleCommandPaletteRequest(
+                observedWindow: observedWindow,
+                requestedWindow: notification.object as? NSWindow,
+                keyWindow: NSApp.keyWindow,
+                mainWindow: NSApp.mainWindow
+            ) else { return }
+            openCommandPaletteFiles()
+        })
+
         view = AnyView(view.onReceive(NotificationCenter.default.publisher(for: .defaultTerminalRegistrationDidChange)) { _ in
             refreshCachedDefaultTerminalStatus()
         })
@@ -5119,7 +5135,7 @@ struct ContentView: View {
     }
 
     private var commandPaletteListScope: CommandPaletteListScope {
-        Self.commandPaletteListScope(for: commandPaletteQuery)
+        Self.commandPaletteListScope(for: commandPaletteQuery, defaultScope: commandPaletteDefaultListScope)
     }
 
     private var commandPaletteCurrentSearchFingerprint: Int {
@@ -5131,11 +5147,14 @@ struct ContentView: View {
         )
     }
 
-    nonisolated private static func commandPaletteListScope(for query: String) -> CommandPaletteListScope {
+    nonisolated private static func commandPaletteListScope(
+        for query: String,
+        defaultScope: CommandPaletteListScope = .switcher
+    ) -> CommandPaletteListScope {
         if query.hasPrefix(Self.commandPaletteCommandsPrefix) {
             return .commands
         }
-        return .switcher
+        return defaultScope
     }
 
     static func commandPaletteShouldResetVisibleResultsForQueryTransition(
@@ -5146,8 +5165,11 @@ struct ContentView: View {
         hasVisibleResults && commandPaletteListScope(for: oldQuery) != commandPaletteListScope(for: newQuery)
     }
 
-    nonisolated static func commandPaletteListIdentity(for query: String) -> String {
-        commandPaletteListScope(for: query).rawValue
+    nonisolated static func commandPaletteListIdentity(
+        for query: String,
+        defaultScope: CommandPaletteListScope = .switcher
+    ) -> String {
+        commandPaletteListScope(for: query, defaultScope: defaultScope).rawValue
     }
 
     private var commandPaletteSwitcherIncludesSurfaceEntries: Bool {
@@ -5161,6 +5183,8 @@ struct ContentView: View {
         switch commandPaletteListScope {
         case .commands:
             return String(localized: "commandPalette.search.commandsPlaceholder", defaultValue: "Type a command")
+        case .files:
+            return String(localized: "commandPalette.search.filesPlaceholder", defaultValue: "Search files by name")
         case .switcher:
             if commandPaletteCurrentWorkSnapshot != nil {
                 return String(localized: "commandPalette.currentWork.search", defaultValue: "Find current work")
@@ -5175,6 +5199,8 @@ struct ContentView: View {
         switch commandPaletteListScope {
         case .commands:
             return String(localized: "commandPalette.search.commandsEmpty", defaultValue: "No commands match your search.")
+        case .files:
+            return goToFileStatusText ?? String(localized: "commandPalette.search.filesEmpty", defaultValue: "No files match your search.")
         case .switcher:
             if commandPaletteCurrentWorkSnapshot != nil {
                 return String(localized: "commandPalette.currentWork.empty", defaultValue: "No work in this snapshot matches your search.")
@@ -5227,7 +5253,7 @@ struct ContentView: View {
         case .commands:
             let suffix = String(query.dropFirst(Self.commandPaletteCommandsPrefix.count))
             return suffix.trimmingCharacters(in: .whitespacesAndNewlines)
-        case .switcher:
+        case .switcher, .files:
             return query.trimmingCharacters(in: .whitespacesAndNewlines)
         }
     }
@@ -5247,6 +5273,22 @@ struct ContentView: View {
         switch scope {
         case .commands:
             return commandPaletteCommands(commandsContext: commandsContext ?? commandPaletteCachedCommandsContext())
+        case .files:
+            guard let rootPath = goToFileRootPath else { return [] }
+            return goToFileEntries.enumerated().map { rank, file in
+                let path = file.absolutePath(in: rootPath)
+                return CommandPaletteCommand(
+                    id: "file.\(path)",
+                    rank: rank,
+                    title: file.name,
+                    subtitle: file.relativePath,
+                    shortcutHint: nil,
+                    kindLabel: nil,
+                    keywords: file.searchKeywords,
+                    dismissOnRun: true,
+                    action: { openFilePreviewFromSidebar(filePath: path) }
+                )
+            }
         case .switcher:
             return commandPaletteSwitcherEntries(includeSurfaces: includeSurfaces)
         }
@@ -5270,7 +5312,7 @@ struct ContentView: View {
             stateQuery: commandPaletteQuery,
             observedQuery: query
         )
-        let scope = Self.commandPaletteListScope(for: effectiveQuery)
+        let scope = Self.commandPaletteListScope(for: effectiveQuery, defaultScope: commandPaletteDefaultListScope)
         let includeSurfaces = Self.commandPaletteSwitcherIncludesSurfaceEntries(
             searchAllSurfaces: commandPaletteSearchAllSurfaces,
             query: effectiveQuery
@@ -5354,7 +5396,7 @@ struct ContentView: View {
                 commandPaletteNucleoSearchIndex = index
                 guard index != nil else { return }
                 if isCommandPalettePresented,
-                   Self.commandPaletteListScope(for: commandPaletteQuery) == scope {
+                   Self.commandPaletteListScope(for: commandPaletteQuery, defaultScope: commandPaletteDefaultListScope) == scope {
                     scheduleCommandPaletteResultsRefresh(
                         query: commandPaletteQuery,
                         preservePendingActivation: true
@@ -5422,7 +5464,7 @@ struct ContentView: View {
         return CommandPaletteCommandListRenderState(
             resultsVersion: commandPaletteVisibleResultsVersion,
             emptyStateText: commandPaletteEmptyStateText,
-            listIdentity: Self.commandPaletteListIdentity(for: commandPaletteQuery),
+            listIdentity: Self.commandPaletteListIdentity(for: commandPaletteQuery, defaultScope: commandPaletteDefaultListScope),
             rows: rows,
             selectedIndex: selectedIndex,
             shouldShowEmptyState: commandPaletteShouldShowEmptyState,
@@ -5452,7 +5494,7 @@ struct ContentView: View {
             stateQuery: commandPaletteQuery,
             observedQuery: query
         )
-        let scope = Self.commandPaletteListScope(for: effectiveQuery)
+        let scope = Self.commandPaletteListScope(for: effectiveQuery, defaultScope: commandPaletteDefaultListScope)
         let matchingQuery = Self.commandPaletteQueryForMatching(
             query: effectiveQuery,
             scope: scope
@@ -5499,7 +5541,8 @@ struct ContentView: View {
                 usageHistory: usageHistory,
                 queryIsEmpty: queryIsEmpty,
                 historyTimestamp: historyTimestamp,
-                additionalScoreBoost: additionalScoreBoost
+                additionalScoreBoost: additionalScoreBoost,
+                resultLimit: scope == .files ? 200 : nil
             )
             cachedCommandPaletteResults = Self.commandPaletteMaterializedSearchResults(
                 matches: matches,
@@ -5565,7 +5608,7 @@ struct ContentView: View {
             guard !Task.isCancelled else { return }
 
             await MainActor.run {
-                let currentScope = Self.commandPaletteListScope(for: commandPaletteQuery)
+                let currentScope = Self.commandPaletteListScope(for: commandPaletteQuery, defaultScope: commandPaletteDefaultListScope)
                 let currentMatchingQuery = Self.commandPaletteQueryForMatching(
                     query: commandPaletteQuery,
                     scope: currentScope
@@ -5608,13 +5651,14 @@ struct ContentView: View {
                 queryIsEmpty: queryIsEmpty,
                 historyTimestamp: historyTimestamp,
                 additionalScoreBoost: additionalScoreBoost,
+                resultLimit: scope == .files ? 200 : nil,
                 shouldCancel: { Task.isCancelled }
             )
 
             guard !Task.isCancelled else { return }
 
             await MainActor.run {
-                let currentScope = Self.commandPaletteListScope(for: commandPaletteQuery)
+                let currentScope = Self.commandPaletteListScope(for: commandPaletteQuery, defaultScope: commandPaletteDefaultListScope)
                 let currentMatchingQuery = Self.commandPaletteQueryForMatching(
                     query: commandPaletteQuery,
                     scope: currentScope
@@ -5676,6 +5720,11 @@ struct ContentView: View {
             return commandPaletteCommandsFingerprint(
                 commandsContext: commandsContext ?? commandPaletteCachedCommandsContext()
             )
+        case .files:
+            var hasher = Hasher()
+            hasher.combine(goToFileRootPath)
+            hasher.combine(goToFileRevision)
+            return hasher.finalize()
         case .switcher:
             return commandPaletteSwitcherEntriesFingerprint(includeSurfaces: includeSurfaces)
         }
@@ -9865,10 +9914,16 @@ struct ContentView: View {
         handleCommandPaletteListRequest(scope: .switcher)
     }
 
+    private func openCommandPaletteFiles() {
+        handleCommandPaletteListRequest(scope: .files)
+        guard isCommandPalettePresented, commandPaletteListScope == .files else { return }
+        loadGoToFileEntries()
+    }
+
     private func handleCommandPaletteListRequest(scope: CommandPaletteListScope) {
         let initialQuery = (scope == .commands) ? Self.commandPaletteCommandsPrefix : ""
         guard isCommandPalettePresented else {
-            presentCommandPalette(initialQuery: initialQuery)
+            presentCommandPalette(initialQuery: initialQuery, defaultScope: scope)
             return
         }
 
@@ -9878,7 +9933,59 @@ struct ContentView: View {
             return
         }
 
-        resetCommandPaletteListState(initialQuery: initialQuery)
+        resetCommandPaletteListState(initialQuery: initialQuery, defaultScope: scope)
+    }
+
+    private func loadGoToFileEntries() {
+        commandPaletteTaskStore.cancel(.fileIndex)
+        goToFileEntries = []
+        goToFileRootPath = nil
+        goToFileRevision &+= 1
+        guard let workspace = tabManager.selectedWorkspace,
+              !workspace.isRemoteWorkspace,
+              !workspace.usesRemoteDirectoryProvenance else {
+            goToFileStatusText = String(localized: "commandPalette.search.filesLocalOnly", defaultValue: "Open a local workspace to search files.")
+            scheduleCommandPaletteResultsRefresh(forceSearchCorpusRefresh: true)
+            return
+        }
+        let rootPath = workspace.currentDirectory.trimmingCharacters(in: .whitespacesAndNewlines)
+        var isDirectory: ObjCBool = false
+        guard !rootPath.isEmpty,
+              FileManager.default.fileExists(atPath: rootPath, isDirectory: &isDirectory),
+              isDirectory.boolValue else {
+            goToFileStatusText = String(localized: "commandPalette.search.filesLocalOnly", defaultValue: "Open a local workspace to search files.")
+            scheduleCommandPaletteResultsRefresh(forceSearchCorpusRefresh: true)
+            return
+        }
+        guard let executable = RipgrepExecutableResolver.resolve() else {
+            goToFileStatusText = String(localized: "commandPalette.search.filesNeedsRipgrep", defaultValue: "File search requires ripgrep.")
+            scheduleCommandPaletteResultsRefresh(forceSearchCorpusRefresh: true)
+            return
+        }
+        goToFileRootPath = rootPath
+        goToFileStatusText = String(localized: "commandPalette.search.filesLoading", defaultValue: "Indexing files…")
+        scheduleCommandPaletteResultsRefresh(forceSearchCorpusRefresh: true)
+        let workspaceID = workspace.id
+        commandPaletteTaskStore.replace(.fileIndex, priority: .userInitiated) {
+            let files = try? await GoToFileIndex(executable: executable).files(in: rootPath)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard isCommandPalettePresented,
+                      commandPaletteDefaultListScope == .files,
+                      tabManager.selectedWorkspace?.id == workspaceID,
+                      goToFileRootPath == rootPath else { return }
+                if tabManager.selectedWorkspace?.currentDirectory != rootPath {
+                    loadGoToFileEntries()
+                    return
+                }
+                goToFileEntries = files ?? []
+                goToFileStatusText = files == nil
+                    ? String(localized: "commandPalette.search.filesFailed", defaultValue: "Could not list files.")
+                    : nil
+                goToFileRevision &+= 1
+                scheduleCommandPaletteResultsRefresh(forceSearchCorpusRefresh: true)
+            }
+        }
     }
 
     private func openCommandPaletteRenameTabInput() {
@@ -10001,7 +10108,10 @@ struct ContentView: View {
     }
 
     /// Presents the palette and resets per-presentation launcher availability before rebuilding results.
-    private func presentCommandPalette(initialQuery: String) {
+    private func presentCommandPalette(
+        initialQuery: String,
+        defaultScope: CommandPaletteListScope = .switcher
+    ) {
         refreshCachedDefaultTerminalStatus(refreshSearchCorpusIfPresented: false)
         commandPaletteFocusRestoreCoordinator.clear()
         let browserTarget = AppDelegate.shared?.focusedBrowserActionTarget(
@@ -10037,10 +10147,15 @@ struct ContentView: View {
         pruneCommandPaletteForkableAgentProbeResults()
         scheduleCommandPaletteForkableAgentProbeResultExpiryRefresh()
         refreshCommandPaletteUsageHistory()
-        resetCommandPaletteListState(initialQuery: initialQuery)
+        resetCommandPaletteListState(initialQuery: initialQuery, defaultScope: defaultScope)
     }
 
-    private func resetCommandPaletteListState(initialQuery: String, currentWork: CurrentWorkSnapshot? = nil) {
+    private func resetCommandPaletteListState(
+        initialQuery: String,
+        currentWork: CurrentWorkSnapshot? = nil,
+        defaultScope: CommandPaletteListScope = .switcher
+    ) {
+        commandPaletteDefaultListScope = defaultScope
         commandPaletteCurrentWorkSnapshot = currentWork
         commandPaletteCurrentWorkRevision &+= 1
         commandPaletteMode = .commands
@@ -10157,6 +10272,7 @@ struct ContentView: View {
         }
 #endif
         cancelCommandPaletteSearch()
+        commandPaletteTaskStore.cancel(.fileIndex)
         cancelCommandPaletteSearchIndexBuild()
         commandPaletteTaskStore.cancel(.agentLauncherAvailability)
         commandPaletteAgentLauncherAvailabilityGeneration &+= 1
@@ -10169,6 +10285,10 @@ struct ContentView: View {
         commandPaletteCurrentWorkSnapshot = nil
         commandPaletteMode = .commands
         commandPaletteQuery = ""
+        commandPaletteDefaultListScope = .switcher
+        goToFileEntries = []
+        goToFileRootPath = nil
+        goToFileStatusText = nil
         commandPaletteRenameDraft = ""
         commandPaletteWorkspaceDescriptionDraft = ""
         commandPaletteWorkspaceDescriptionHeight = CommandPaletteMultilineTextEditorRepresentable.defaultMinimumHeight

@@ -1,7 +1,7 @@
 /// The window-agnostic policy for a command-palette open request.
 ///
 /// Each case names one way the palette can be requested (open the command list,
-/// the workspace switcher, or one of the rename/edit prompts). The app target
+/// workspace switcher, file picker, or one of the rename/edit prompts). The app target
 /// resolves the target `NSWindow`, clears browser focus mode, and posts the
 /// notification; the per-kind policy that decides *which* notification to post
 /// and whether the request marks a pending-open lives here so it stays pure and
@@ -11,6 +11,8 @@ public enum CommandPaletteRequestKind: String, Sendable, CaseIterable {
     case commands
     /// Opens the workspace switcher palette.
     case switcher
+    /// Opens the file picker.
+    case files
     /// Opens the rename-tab prompt.
     case renameTab
     /// Opens the rename-workspace prompt.
@@ -29,6 +31,8 @@ public enum CommandPaletteRequestKind: String, Sendable, CaseIterable {
             return "cmux.commandPaletteRequested"
         case .switcher:
             return "cmux.commandPaletteSwitcherRequested"
+        case .files:
+            return "cmux.commandPaletteFilesRequested"
         case .renameTab:
             return "cmux.commandPaletteRenameTabRequested"
         case .renameWorkspace:
@@ -45,7 +49,7 @@ public enum CommandPaletteRequestKind: String, Sendable, CaseIterable {
     /// change rather than a call-site edit.
     public var marksPending: Bool {
         switch self {
-        case .commands, .switcher, .renameTab, .renameWorkspace, .editWorkspaceDescription:
+        case .commands, .switcher, .files, .renameTab, .renameWorkspace, .editWorkspaceDescription:
             return true
         }
     }

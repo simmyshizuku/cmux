@@ -27,6 +27,7 @@ extension ShortcutAction {
         case .openFolder: return "Open Folder"
         case .reopenPreviousSession: return "Restore Previous App Launch"
         case .goToWorkspace: return "Go to Workspace…"
+        case .goToFile: return String(localized: "menu.file.goToFile", defaultValue: "Go to File…")
         case .commandPalette: return "Command Palette…"
         case .commandPaletteNext: return "Command Palette: Next"
         case .commandPalettePrevious: return "Command Palette: Previous"

@@ -39,6 +39,7 @@ Values for `shortcuts.bindings.<action>`:
 - `shortcuts.bindings.cycleWorkspaceStatus`
 - `shortcuts.bindings.editWorkspaceDescription`
 - `shortcuts.bindings.goToWorkspace`
+- `shortcuts.bindings.goToFile`
 - `shortcuts.bindings.groupSelectedWorkspaces`
 - `shortcuts.bindings.markWorkspaceDone`
 - `shortcuts.bindings.moveWorkspaceDown`
