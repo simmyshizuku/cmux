@@ -1,16 +1,16 @@
 import Foundation
 
-/// Size and line-count gates for the v1 Highlightr engine.
+/// Size and line-count gates for the highlight.js engine.
 ///
 /// File Preview can load up to 16 MB. Full-document JavaScriptCore highlighting
 /// on that payload multiplies memory and fights the TextKit 1 selection path
 /// (`manaflow-ai/cmux#4576`). Token coloring is skipped above these ceilings;
 /// editor chrome (gutter, current line, indent guides) still runs.
 public struct HighlightPolicy: Sendable {
-    /// kb:ceiling: Skip Highlightr when the UTF-8 payload exceeds 256 KiB.
+    /// kb:ceiling: Skip highlight.js when the UTF-8 payload exceeds 256 KiB.
     public static let maximumHighlightedBytes = 256 * 1024
 
-    /// kb:ceiling: Skip Highlightr when the line count exceeds 4_000 even if
+    /// kb:ceiling: Skip highlight.js when the line count exceeds 4_000 even if
     /// the byte size is still under ``maximumHighlightedBytes``.
     public static let maximumHighlightedLines = 4_000
 

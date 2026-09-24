@@ -10,8 +10,12 @@ public enum TokenRole: Sendable, Equatable, Hashable {
     case type
     /// String literals.
     case string
-    /// Numbers, symbols, titles.
+    /// Numbers, symbols, and list bullets.
     case number
+    /// Function and method names, at declarations and call sites.
+    case function
+    /// Member accesses such as `.count` or `.preferredTransform`.
+    case property
     /// Attributes, JSON keys, selectors.
     case attribute
     /// Variables and template variables.

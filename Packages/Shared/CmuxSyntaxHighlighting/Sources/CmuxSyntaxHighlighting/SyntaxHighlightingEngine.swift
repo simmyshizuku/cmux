@@ -1,8 +1,8 @@
 /// Produces token-colored attributed text for a source buffer.
 ///
-/// Implementations must be safe to call off the main actor. v1 is
-/// ``HighlightrSyntaxEngine``; a later Tree-sitter engine can conform without
-/// changing File Preview chrome.
+/// Implementations must be safe to call off the main actor. The shipping
+/// engine is ``HighlightJSSyntaxEngine``; a later Tree-sitter engine can
+/// conform without changing File Preview chrome.
 public protocol SyntaxHighlightingEngine: Sendable {
     /// Highlights `text` as `language` using `theme`.
     ///

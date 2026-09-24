@@ -16,8 +16,13 @@ public struct TokenPalette: Sendable, Equatable {
     /// String literals. Warm sand — the one complementary hue so the
     /// page does not collapse into monochrome blue.
     public let string: TokenColor
-    /// Numbers, symbols, and titles. Cool aqua in the same family as the blue.
+    /// Numbers, symbols, and bullets. Cool aqua in the same family as the blue.
     public let number: TokenColor
+    /// Function and method names at declarations and call sites. Lavender,
+    /// so calls read apart from the blue keyword/type family.
+    public let function: TokenColor
+    /// Member accesses. A lighter step of the function lavender.
+    public let property: TokenColor
     /// Attributes, JSON keys, and selectors.
     public let attribute: TokenColor
     /// Variables and template variables.
@@ -41,6 +46,8 @@ public struct TokenPalette: Sendable, Equatable {
         type: TokenColor(red: 0x8E, green: 0xC5, blue: 0xFF),
         string: TokenColor(red: 0xE0, green: 0xB8, blue: 0x6A),
         number: TokenColor(red: 0x5E, green: 0xD0, blue: 0xC8),
+        function: TokenColor(red: 0xB6, green: 0x9C, blue: 0xFF),
+        property: TokenColor(red: 0xD4, green: 0xC4, blue: 0xFF),
         attribute: TokenColor(red: 0xB4, green: 0xD4, blue: 0xF5),
         variable: TokenColor(red: 0xC8, green: 0xCE, blue: 0xD6),
         regexp: TokenColor(red: 0x4E, green: 0xA3, blue: 0xFF),
@@ -58,6 +65,8 @@ public struct TokenPalette: Sendable, Equatable {
         type: TokenColor(red: 0x00, green: 0x73, blue: 0xD9),
         string: TokenColor(red: 0x8A, green: 0x5A, blue: 0x00),
         number: TokenColor(red: 0x0F, green: 0x76, blue: 0x6E),
+        function: TokenColor(red: 0x6B, green: 0x3F, blue: 0xD1),
+        property: TokenColor(red: 0x7A, green: 0x5A, blue: 0xB8),
         attribute: TokenColor(red: 0x0C, green: 0x4A, blue: 0x6E),
         variable: TokenColor(red: 0x3F, green: 0x4A, blue: 0x55),
         regexp: TokenColor(red: 0x00, green: 0x88, blue: 0xFF),
@@ -85,6 +94,10 @@ public struct TokenPalette: Sendable, Equatable {
             return string
         case .number:
             return number
+        case .function:
+            return function
+        case .property:
+            return property
         case .attribute:
             return attribute
         case .variable:

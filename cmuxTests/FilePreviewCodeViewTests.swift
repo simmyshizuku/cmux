@@ -24,7 +24,7 @@ struct FilePreviewCodeViewTests {
         """
         textView.string = source
 
-        let engine = HighlightrSyntaxEngine()
+        let engine = HighlightJSSyntaxEngine()
         let highlighted = try #require(
             await engine.highlight(text: source, language: "json", theme: .dark)
         )
@@ -59,7 +59,7 @@ struct FilePreviewCodeViewTests {
             at: trueRange.location,
             effectiveRange: nil
         ))
-        #expect(HighlightColorRemapper(theme: .dark).hexKey(from: color) == "0091FF")
+        #expect(hexKey(from: color) == "0091FF")
     }
 
     @Test("Syntax styling reuses normalized font variants per apply")
@@ -266,7 +266,7 @@ struct FilePreviewCodeViewTests {
             at: trueRange.location,
             effectiveRange: nil
         ))
-        #expect(HighlightColorRemapper(theme: .dark).hexKey(from: color) == "0091FF")
+        #expect(hexKey(from: color) == "0091FF")
     }
 
     @Test("Zooming the preview font requests a forced restyle")
@@ -327,12 +327,12 @@ struct FilePreviewCodeViewTests {
             at: trueRange.location,
             effectiveRange: nil
         ))
-        #expect(HighlightColorRemapper(theme: .dark).hexKey(from: color) == "0091FF")
+        #expect(hexKey(from: color) == "0091FF")
     }
 
     @Test("Unknown and oversized buffers stay uncolored")
     func unknownAndOversizedStayPlain() async {
-        let engine = HighlightrSyntaxEngine()
+        let engine = HighlightJSSyntaxEngine()
         let unknown = await engine.highlight(
             text: "hello",
             language: nil,
@@ -456,13 +456,24 @@ struct FilePreviewCodeViewTests {
         #expect(settings.catalog.tabWidthRange == (1...8))
     }
 
+    /// Six uppercase sRGB hex digits for a foreground-color attribute.
+    private func hexKey(from attribute: Any) -> String? {
+        guard let color = (attribute as? NSColor)?.usingColorSpace(.sRGB) else { return nil }
+        return String(
+            format: "%02X%02X%02X",
+            Int((color.redComponent * 255).rounded()),
+            Int((color.greenComponent * 255).rounded()),
+            Int((color.blueComponent * 255).rounded())
+        )
+    }
+
     private func distinctForegroundColors(in textView: NSTextView) -> Set<String> {
         guard let storage = textView.textStorage else { return [] }
         var colors: Set<String> = []
         let full = NSRange(location: 0, length: storage.length)
         storage.enumerateAttribute(.foregroundColor, in: full, options: []) { attribute, _, _ in
             guard let attribute,
-                  let hex = HighlightColorRemapper(theme: .dark).hexKey(from: attribute) else {
+                  let hex = hexKey(from: attribute) else {
                 return
             }
             colors.insert(hex)
@@ -475,7 +486,7 @@ struct FilePreviewCodeViewTests {
         let full = NSRange(location: 0, length: value.length)
         value.enumerateAttribute(.foregroundColor, in: full, options: []) { attribute, _, _ in
             guard let attribute,
-                  let hex = HighlightColorRemapper(theme: .dark).hexKey(from: attribute) else {
+                  let hex = hexKey(from: attribute) else {
                 return
             }
             colors.insert(hex)

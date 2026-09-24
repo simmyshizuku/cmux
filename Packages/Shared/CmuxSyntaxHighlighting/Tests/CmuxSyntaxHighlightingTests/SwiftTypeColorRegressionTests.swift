@@ -16,7 +16,7 @@ struct SwiftTypeColorRegressionTests {
 
     @Test("Swift types use the palette type color", arguments: [TokenTheme.dark, TokenTheme.light])
     func swiftTypesUsePaletteTypeColor(theme: TokenTheme) async throws {
-        let engine: any SyntaxHighlightingEngine = HighlightrSyntaxEngine()
+        let engine: any SyntaxHighlightingEngine = HighlightJSSyntaxEngine()
         let highlighted = try #require(
             await engine.highlight(text: source, language: "swift", theme: theme)
         )

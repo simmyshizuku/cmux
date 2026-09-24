@@ -6,7 +6,7 @@ import AppKit
 import UIKit
 #endif
 
-/// Encodes and bridges the platform colors emitted by Highlightr.
+/// Bridges ``TokenColor`` to platform colors and reads them back as hex keys.
 struct HighlightColorPacking: Sendable {
     private let hexDigits = Array("0123456789ABCDEF".utf8)
 
@@ -64,24 +64,6 @@ struct HighlightColorPacking: Sendable {
 #else
         return nil
 #endif
-    }
-
-    func packedRGBKey(fromHexKey hexKey: String) -> UInt32? {
-        guard hexKey.utf8.count == 6 else { return nil }
-        var result: UInt32 = 0
-        for character in hexKey.utf8 {
-            let digit: UInt8
-            switch character {
-            case 48...57:
-                digit = character - 48
-            case 65...70:
-                digit = character - 55
-            default:
-                return nil
-            }
-            result = (result << 4) | UInt32(digit)
-        }
-        return result
     }
 
     func platformColor(_ color: TokenColor) -> Any {

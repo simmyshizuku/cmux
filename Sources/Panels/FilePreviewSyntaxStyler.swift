@@ -2,7 +2,7 @@ import AppKit
 import CmuxFoundation
 import CmuxSyntaxHighlighting
 
-/// Applies Highlightr token colors onto a TextKit 1 `NSTextStorage` in place.
+/// Applies highlight.js token colors onto a TextKit 1 `NSTextStorage` in place.
 ///
 /// Does not replace the storage or assign `textView.string`. Save/dirty stay
 /// on the plain string. Highlighter background is stripped so Ghostty panel
@@ -11,7 +11,7 @@ import CmuxSyntaxHighlighting
 final class FilePreviewSyntaxStyler {
     private let catalog = LanguageCatalog()
     private let policy = HighlightPolicy()
-    private let engine = HighlightrSyntaxEngine()
+    private let engine = HighlightJSSyntaxEngine()
     private var highlightTask: Task<Void, Never>?
     private var highlightGeneration = 0
     private var lastHighlightedContentRevision: Int?

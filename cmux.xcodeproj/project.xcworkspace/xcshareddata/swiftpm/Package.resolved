@@ -1,15 +1,6 @@
 {
-  "originHash": "2565647770c7d8bd4febd1c24cc66a7e250072c2334100f7169e8555d5b1ee5e",
+  "originHash": "dcceef072c5b0f3584c1b41af79747d67caf18643e0efed93fe68558101c171b",
   "pins": [
-    {
-      "identity": "highlightr",
-      "kind": "remoteSourceControl",
-      "location": "https://github.com/raspu/Highlightr.git",
-      "state": {
-        "revision": "05e7fcc63b33925cd0c1faaa205cdd5681e7bbef",
-        "version": "2.3.0"
-      }
-    },
     {
       "identity": "iroh-ffi",
       "kind": "remoteSourceControl",

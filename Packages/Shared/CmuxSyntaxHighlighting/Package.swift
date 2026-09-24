@@ -3,7 +3,8 @@
 import PackageDescription
 
 /// Leaf syntax-highlighting engine used by File Preview (and later other
-/// native code views). Highlightr is the v1 adapter; chrome stays in the app.
+/// native code views). Bundled highlight.js runs in JavaScriptCore; chrome
+/// stays in the app.
 let package = Package(
     name: "CmuxSyntaxHighlighting",
     platforms: [
@@ -16,17 +17,13 @@ let package = Package(
             targets: ["CmuxSyntaxHighlighting"]
         ),
     ],
-    dependencies: [
-        .package(
-            url: "https://github.com/raspu/Highlightr.git",
-            exact: "2.3.0"
-        ),
-    ],
     targets: [
         .target(
             name: "CmuxSyntaxHighlighting",
-            dependencies: [
-                .product(name: "Highlightr", package: "Highlightr"),
+            resources: [
+                // highlight.js 11.11.1 (BSD-3-Clause), all grammars.
+                .copy("Resources/highlight.min.js"),
+                .copy("Resources/highlight.js-LICENSE"),
             ],
             swiftSettings: [
                 .swiftLanguageMode(.v6),

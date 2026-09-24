@@ -46,7 +46,7 @@ public struct TokenColor: Sendable, Equatable, Hashable {
         String(format: "#%02X%02X%02X", red, green, blue)
     }
 
-    /// Six uppercase hex digits with no `#`. Used as a remapper lookup key.
+    /// Six uppercase hex digits with no `#`. Used as a test and lookup key.
     public var hexKey: String {
         String(format: "%02X%02X%02X", red, green, blue)
     }
