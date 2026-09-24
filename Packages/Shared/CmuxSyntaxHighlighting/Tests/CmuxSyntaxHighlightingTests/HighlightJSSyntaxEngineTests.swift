@@ -57,6 +57,55 @@ struct HighlightJSSyntaxEngineTests {
         #expect(hex(highlighted, "track") == palette.foreground.hexKey)
     }
 
+    @Test("Dart classes, types, calls, and members use the palette")
+    func dartScopesUsePalette() async throws {
+        let source = """
+        class HomePage extends StatelessWidget {
+          final String title;
+          @override
+          Widget build(BuildContext context) {
+            return Scaffold(body: Text(title, style: Theme.of(context).textTheme.bodyLarge));
+          }
+        }
+        """
+        let palette = TokenTheme.dark.palette
+        let highlighted = try #require(
+            await HighlightJSSyntaxEngine().highlight(text: source, language: "dart", theme: .dark)
+        )
+        for typeName in ["HomePage", "StatelessWidget", "String", "Widget", "BuildContext", "Scaffold", "Text", "Theme"] {
+            #expect(hex(highlighted, typeName) == palette.type.hexKey, "\(typeName)")
+        }
+        #expect(hex(highlighted, "build") == palette.function.hexKey)
+        #expect(hex(highlighted, "of(") == palette.function.hexKey)
+        #expect(hex(highlighted, "textTheme") == palette.property.hexKey)
+        #expect(hex(highlighted, "class") == palette.keyword.hexKey)
+        #expect(hex(highlighted, "@override") == palette.attribute.hexKey)
+    }
+
+    @Test("Kotlin types, declarations, calls, and members use the palette")
+    func kotlinScopesUsePalette() async throws {
+        let source = """
+        class Foo(private val list: List<String>) : Bar() {
+            fun computeFrames(count: Int): Long {
+                val result = helper.compute(count, 30L)
+                return result.frames.size.toLong()
+            }
+        }
+        """
+        let palette = TokenTheme.dark.palette
+        let highlighted = try #require(
+            await HighlightJSSyntaxEngine().highlight(text: source, language: "kotlin", theme: .dark)
+        )
+        for typeName in ["Foo", "List", "String", "Bar", "Int", "Long"] {
+            #expect(hex(highlighted, typeName) == palette.type.hexKey, "\(typeName)")
+        }
+        #expect(hex(highlighted, "computeFrames") == palette.function.hexKey)
+        #expect(hex(highlighted, "compute(") == palette.function.hexKey)
+        #expect(hex(highlighted, "toLong") == palette.function.hexKey)
+        #expect(hex(highlighted, "frames") == palette.property.hexKey)
+        #expect(hex(highlighted, "fun") == palette.keyword.hexKey)
+    }
+
     @Test("JSON tokens use the cmux palette")
     func jsonTokensUsePalette() async throws {
         let engine = HighlightJSSyntaxEngine()

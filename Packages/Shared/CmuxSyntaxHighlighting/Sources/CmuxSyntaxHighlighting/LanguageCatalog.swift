@@ -44,6 +44,7 @@ public struct LanguageCatalog: Sendable {
         "rs": "rust",
         "rb": "ruby",
         "java": "java",
+        "dart": "dart",
         "kt": "kotlin",
         "kts": "kotlin",
         "cs": "csharp",

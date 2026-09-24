@@ -14,6 +14,9 @@ struct LanguageCatalogTests {
         #expect(catalog.language(forExtension: "yml") == "yaml")
         #expect(catalog.language(forExtension: "TS") == "typescript")
         #expect(catalog.language(forExtension: ".py") == "python")
+        #expect(catalog.language(forExtension: "dart") == "dart")
+        #expect(catalog.language(forExtension: "kt") == "kotlin")
+        #expect(catalog.language(forExtension: "kts") == "kotlin")
     }
 
     @Test("Unknown extensions return nil")

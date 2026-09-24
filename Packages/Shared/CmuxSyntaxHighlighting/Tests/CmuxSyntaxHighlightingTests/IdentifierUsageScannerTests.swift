@@ -26,6 +26,38 @@ struct IdentifierUsageScannerTests {
         ])
     }
 
+    @Test("PascalCase names are types, including constructor calls")
+    func pascalCaseNamesAreTypes() {
+        let source = "Widget build(BuildContext c) => Theme.of(c);"
+        let runs = scanner.addingUsageRuns(to: [], source: source, language: "dart")
+        #expect(runs == [
+            HighlightRun(location: 0, length: 6, style: TokenStyle(role: .type)),
+            HighlightRun(location: 7, length: 5, style: TokenStyle(role: .function)),
+            HighlightRun(location: 13, length: 12, style: TokenStyle(role: .type)),
+            HighlightRun(location: 32, length: 5, style: TokenStyle(role: .type)),
+            HighlightRun(location: 38, length: 2, style: TokenStyle(role: .function)),
+        ])
+    }
+
+    @Test("Constants and PascalCase-method languages keep call and member roles")
+    func pascalCaseRuleSkipsConstantsAndMethodCaseLanguages() {
+        let kotlin = scanner.addingUsageRuns(to: [], source: "Color.RED", language: "kotlin")
+        #expect(kotlin == [
+            HighlightRun(location: 0, length: 5, style: TokenStyle(role: .type)),
+            HighlightRun(location: 6, length: 3, style: TokenStyle(role: .property)),
+        ])
+        let csharp = scanner.addingUsageRuns(to: [], source: "Console.WriteLine(x)", language: "csharp")
+        #expect(csharp == [
+            HighlightRun(location: 8, length: 9, style: TokenStyle(role: .function)),
+        ])
+    }
+
+    @Test("Dollar signs are identifier characters")
+    func dollarSignsAreIdentifierCharacters() {
+        let runs = scanner.addingUsageRuns(to: [], source: "$state.value", language: "javascript")
+        #expect(runs == [HighlightRun(location: 7, length: 5, style: TokenStyle(role: .property))])
+    }
+
     @Test("Range operands are not member accesses")
     func ignoresRangeOperands() {
         let runs = scanner.addingUsageRuns(to: [], source: "a...b; c..<d", language: "swift")

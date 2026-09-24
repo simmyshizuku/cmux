@@ -17,10 +17,20 @@ public struct HighlightScopeClassifier: Sendable {
 
     /// Returns the style for a span's `class` attribute.
     ///
-    /// - Parameter classAttribute: The raw attribute value, e.g. `hljs-title function_`.
+    /// Older grammars such as Dart wrap a declaration in a `hljs-class` or
+    /// `hljs-function` container holding a bare `hljs-title`; the container
+    /// decides whether that title names a type or a function.
+    ///
+    /// - Parameters:
+    ///   - classAttribute: The raw attribute value, e.g. `hljs-title function_`.
+    ///   - insideClassDeclaration: Whether the span's direct parent is a
+    ///     `hljs-class` container. Defaults to `false`.
     /// - Returns: The scope's style, or `nil` for an unknown scope, which
     ///   callers treat as inheriting the enclosing span's style.
-    public func style(forClassAttribute classAttribute: String) -> TokenStyle? {
+    public func style(
+        forClassAttribute classAttribute: String,
+        insideClassDeclaration: Bool = false
+    ) -> TokenStyle? {
         var components = classAttribute.split(separator: " ").makeIterator()
         guard let first = components.next(), first.hasPrefix("hljs-") else { return nil }
         let scope = first.dropFirst("hljs-".count)
@@ -34,14 +44,15 @@ public struct HighlightScopeClassifier: Sendable {
 
         switch scope {
         case "title":
-            // Bare `title` is a function-like declaration name in most grammars.
-            return TokenStyle(role: subScope == "class" ? .type : .function)
+            // A bare `title` is a function name unless a class container holds it.
+            let namesType = subScope == "class" || (subScope == nil && insideClassDeclaration)
+            return TokenStyle(role: namesType ? .type : .function)
         case "variable":
             // `this`, `self`, `console` render like keywords, as in Xcode.
             return TokenStyle(role: subScope == "language" ? .keyword : .variable)
         case "keyword", "literal", "section", "tag", "name", "selector-tag", "attribute":
             return TokenStyle(role: .keyword)
-        case "type", "built_in", "builtin-name", "class":
+        case "type", "built_in", "builtin-name":
             return TokenStyle(role: .type)
         case "string", "code", "char":
             return TokenStyle(role: .string)
@@ -59,13 +70,11 @@ public struct HighlightScopeClassifier: Sendable {
             return TokenStyle(role: .regexp)
         case "property":
             return TokenStyle(role: .property)
-        case "function":
-            return TokenStyle(role: .function)
         case "strong":
             return TokenStyle(role: .foreground, isBold: true)
         case "emphasis", "formula":
             return TokenStyle(role: .foreground, isItalic: true)
-        case "params", "subst", "operator", "punctuation":
+        case "params", "subst", "operator", "punctuation", "class", "function":
             // Containers and punctuation reset to plain text. Nested scopes
             // (a type inside `params`, an expression inside `subst`) still win.
             return TokenStyle(role: .foreground)

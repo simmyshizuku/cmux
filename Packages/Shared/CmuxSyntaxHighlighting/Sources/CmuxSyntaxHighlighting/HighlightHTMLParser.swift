@@ -29,8 +29,9 @@ public struct HighlightHTMLParser: Sendable {
     public func parse(html: String, source: String) -> [HighlightRun]? {
         let markup = Array(html.utf16)
         let expected = Array(source.utf16)
-        var styleCache: [String: TokenStyle?] = [:]
+        var styleCache: [StyleCacheKey: TokenStyle?] = [:]
         var styleStack: [TokenStyle?] = []
+        var classContainerStack: [Bool] = []
         var runs: [HighlightRun] = []
         var index = 0
         var position = 0
@@ -63,6 +64,7 @@ public struct HighlightHTMLParser: Sendable {
                 if matches(Markup.spanClose, in: markup, at: index) {
                     guard !styleStack.isEmpty else { return nil }
                     styleStack.removeLast()
+                    classContainerStack.removeLast()
                     index += Markup.spanClose.count
                     continue
                 }
@@ -71,14 +73,22 @@ public struct HighlightHTMLParser: Sendable {
                 guard let classEnd = markup[classStart...].firstIndex(of: Markup.quote),
                       matches(Markup.tagEnd, in: markup, at: classEnd) else { return nil }
                 let classAttribute = String(decoding: markup[classStart..<classEnd], as: UTF16.self)
+                let cacheKey = StyleCacheKey(
+                    classAttribute: classAttribute,
+                    insideClassDeclaration: classContainerStack.last ?? false
+                )
                 let style: TokenStyle?
-                if let cached = styleCache[classAttribute] {
+                if let cached = styleCache[cacheKey] {
                     style = cached
                 } else {
-                    style = classifier.style(forClassAttribute: classAttribute)
-                    styleCache[classAttribute] = style
+                    style = classifier.style(
+                        forClassAttribute: classAttribute,
+                        insideClassDeclaration: cacheKey.insideClassDeclaration
+                    )
+                    styleCache[cacheKey] = style
                 }
                 styleStack.append(style ?? styleStack.last ?? nil)
+                classContainerStack.append(classAttribute == "hljs-class")
                 index = classEnd + Markup.tagEnd.count
                 continue
             }
@@ -138,6 +148,12 @@ public struct HighlightHTMLParser: Sendable {
             guard let value, let scalar = Unicode.Scalar(value) else { return nil }
             return (Array(String(Character(scalar)).utf16), consumed)
         }
+    }
+
+    /// A span's classification depends on its class and its direct container.
+    private struct StyleCacheKey: Hashable {
+        let classAttribute: String
+        let insideClassDeclaration: Bool
     }
 
     /// UTF-16 constants for the markup highlight.js emits.

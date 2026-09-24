@@ -27,6 +27,19 @@ struct HighlightHTMLParserTests {
         ])
     }
 
+    @Test("Legacy class containers turn their bare titles into types")
+    func legacyClassTitlesAreTypes() throws {
+        let source = "class A extends B {}"
+        let html = #"<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">A</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">B</span> </span>{}"#
+        let runs = try #require(parser.parse(html: html, source: source))
+        #expect(runs == [
+            HighlightRun(location: 0, length: 5, style: TokenStyle(role: .keyword)),
+            HighlightRun(location: 6, length: 1, style: TokenStyle(role: .type)),
+            HighlightRun(location: 8, length: 7, style: TokenStyle(role: .keyword)),
+            HighlightRun(location: 16, length: 1, style: TokenStyle(role: .type)),
+        ])
+    }
+
     @Test("Unknown scopes inherit the enclosing style")
     func unknownScopeInherits() throws {
         let source = #""a\(b)c""#

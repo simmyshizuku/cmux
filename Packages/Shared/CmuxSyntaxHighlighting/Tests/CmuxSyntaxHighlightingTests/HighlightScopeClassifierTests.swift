@@ -32,6 +32,14 @@ struct HighlightScopeClassifierTests {
         #expect(classifier.style(forClassAttribute: classAttribute)?.role == role)
     }
 
+    @Test("A bare title names a type inside a legacy class container and a function elsewhere")
+    func bareTitleFollowsItsContainer() {
+        #expect(classifier.style(forClassAttribute: "hljs-title", insideClassDeclaration: true)?.role == .type)
+        #expect(classifier.style(forClassAttribute: "hljs-title", insideClassDeclaration: false)?.role == .function)
+        #expect(classifier.style(forClassAttribute: "hljs-class")?.role == .foreground)
+        #expect(classifier.style(forClassAttribute: "hljs-function")?.role == .foreground)
+    }
+
     @Test("Doc tags are bold comments and Markdown emphasis is italic")
     func mapsFontTraits() {
         #expect(classifier.style(forClassAttribute: "hljs-doctag") == TokenStyle(role: .comment, isBold: true))
