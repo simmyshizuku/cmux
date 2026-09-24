@@ -145,6 +145,23 @@ final class MenuKeyEquivalentRoutingUITests: XCTestCase {
         )
     }
 
+    func testDirectoryFindPrefillsSelectedPanelText() {
+        let app = launchWithBrowserSetup(browserURL: makeSelectedTextDirectoryFindPageURL())
+        XCTAssertTrue(
+            waitForGotoSplitMatch(timeout: 10.0) { $0["browserPageTitle"] == "directory-selection-ready" },
+            "Expected the browser fixture to select text before opening directory Find"
+        )
+
+        app.typeKey("f", modifierFlags: [.command, .shift])
+
+        let findField = app.searchFields["FileExplorerSearchField"].firstMatch
+        XCTAssertTrue(findField.waitForExistence(timeout: 6.0))
+        XCTAssertTrue(
+            waitForCondition(timeout: 4.0) { (findField.value as? String) == "cmux-selection-needle" },
+            "Expected Cmd+Shift+F to search for selected panel text. value=\(String(describing: findField.value))"
+        )
+    }
+
     func testDirectoryFindFocusAndPasteSurviveSidebarReopening() {
         let app = XCUIApplication.cmuxTestApplication()
         app.launchEnvironment["CMUX_SOCKET_PATH"] = socketPath
@@ -609,6 +626,30 @@ final class MenuKeyEquivalentRoutingUITests: XCTestCase {
                 document.body.dataset.cmdf = 'handled';
               }
             }, true);
+          </script>
+        </body>
+        </html>
+        """
+        return makeDataURL(html)
+    }
+
+    private func makeSelectedTextDirectoryFindPageURL() -> String {
+        let html = """
+        <!doctype html>
+        <html>
+        <head><meta charset="utf-8"><title>directory-selection-pending</title></head>
+        <body tabindex="-1">
+          <main id="selection">cmux-selection-needle</main>
+          <script>
+            window.addEventListener('load', () => {
+              document.body.focus();
+              const range = document.createRange();
+              range.selectNodeContents(document.getElementById('selection'));
+              const selection = window.getSelection();
+              selection.removeAllRanges();
+              selection.addRange(range);
+              document.title = 'directory-selection-ready';
+            });
           </script>
         </body>
         </html>
