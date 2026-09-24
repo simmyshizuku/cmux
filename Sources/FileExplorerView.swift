@@ -1323,6 +1323,24 @@ final class FileExplorerContainerView: NSView {
         return result
     }
 
+    var focusedSearchQuery: String? {
+        guard let window,
+              let editor = searchField.currentEditor() as? NSTextView,
+              window.firstResponder === editor else { return nil }
+        return searchField.stringValue
+    }
+
+    @discardableResult
+    func prefillFocusedSearchQuery(_ query: String, ifUnchangedFrom expectedQuery: String) -> Bool {
+        guard focusedSearchQuery == expectedQuery,
+              let editor = searchField.currentEditor() as? NSTextView else { return false }
+        searchField.stringValue = query
+        editor.string = query
+        editor.setSelectedRange(NSRange(location: 0, length: query.utf16.count))
+        scheduleSearchRefresh()
+        return true
+    }
+
     @discardableResult
     func focusOutline() -> Bool {
 #if DEBUG

@@ -22,6 +22,47 @@ private final class ShortcutNoopFileSearchController: FileSearchControlling {
 
 @MainActor
 @Suite(.serialized) struct FileExplorerShortcutSettingsTests {
+    @Test func directoryFindUsesSelectedNativeText() {
+        let editor = NSTextView()
+        editor.string = "before selected needle after"
+        editor.setSelectedRange((editor.string as NSString).range(of: "selected needle"))
+
+        #expect(directoryFindQuery(from: editor) == "selected needle")
+        #expect(directoryFindQuery(fromSelectedText: "  first line  \nsecond line") == "first line")
+        #expect(directoryFindQuery(fromSelectedText: " \n \t ") == nil)
+    }
+
+    @Test func directoryFindPrefillPreservesLaterTyping() throws {
+        let coordinator = FileExplorerPanelView.Coordinator(
+            store: FileExplorerStore(),
+            state: FileExplorerState(),
+            onOpenFilePreview: { _ in }
+        )
+        let container = FileExplorerContainerView(
+            coordinator: coordinator,
+            presentation: .find,
+            searchController: ShortcutNoopFileSearchController()
+        )
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 360, height: 300),
+            styleMask: [.titled], backing: .buffered, defer: false
+        )
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        window.contentView = container
+        window.makeKeyAndOrderFront(nil)
+        window.displayIfNeeded()
+
+        #expect(container.focusSearchField())
+        #expect(container.prefillFocusedSearchQuery("selected needle", ifUnchangedFrom: ""))
+        let field = try #require(findSearchField(in: container))
+        #expect(field.stringValue == "selected needle")
+
+        field.stringValue = "user typing"
+        #expect(!container.prefillFocusedSearchQuery("late selection", ifUnchangedFrom: "selected needle"))
+        #expect(field.stringValue == "user typing")
+    }
+
     @Test func openSelectionShortcutsAreSidebarFocusedAndSettingsBacked() throws {
         let primary = KeyboardShortcutSettings.Action.fileExplorerOpenSelection
         let finderAlias = KeyboardShortcutSettings.Action.fileExplorerOpenSelectionFinderAlias

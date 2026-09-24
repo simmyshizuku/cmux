@@ -2,6 +2,34 @@ import AppKit
 import CmuxSettings
 import CmuxWorkspaces
 
+/// Use one searchable line from a panel selection; large or multiline selections
+/// should not become an unbounded single-line file-search query.
+func directoryFindQuery(fromSelectedText text: String) -> String? {
+    let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let line = trimmed.split(whereSeparator: \.isNewline).first else { return nil }
+    let query = String(line.prefix(256)).trimmingCharacters(in: .whitespacesAndNewlines)
+    return query.isEmpty ? nil : query
+}
+
+@MainActor
+func directoryFindQuery(from responder: NSResponder?) -> String? {
+    guard let responder else { return nil }
+    if let terminal = responder.cmuxTerminalKeyEquivalentOwningGhosttyView(),
+       let text = terminal.readSelectionSnapshot()?.string {
+        return directoryFindQuery(fromSelectedText: text)
+    }
+    guard let textView = responder as? NSTextView,
+          !textView.isFieldEditor,
+          let storage = textView.textStorage else { return nil }
+    let range = textView.selectedRange()
+    guard range.location != NSNotFound,
+          range.length > 0,
+          range.location <= storage.length,
+          range.length <= storage.length - range.location else { return nil }
+    let bounded = NSRange(location: range.location, length: min(range.length, 2_048))
+    return directoryFindQuery(fromSelectedText: storage.attributedSubstring(from: bounded).string)
+}
+
 /// Perform the configured action for opening a local file from the file explorer.
 @MainActor
 func performFileExplorerFileOpen(path: String, onOpenFilePreview: (String) -> Void) {

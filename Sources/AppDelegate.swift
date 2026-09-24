@@ -7947,6 +7947,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             return false
         }
         let window = context.window ?? windowForMainWindowId(context.windowId)
+        let focusController = context.keyboardFocusCoordinator
+        let selectedPanel = focusController.panelOwningSelection(for: window?.firstResponder)
+        let selectedQuery = selectedPanel == nil ? nil : directoryFindQuery(from: window?.firstResponder)
 #if DEBUG
         let beforeResponder = window?.firstResponder.map { String(describing: type(of: $0)) } ?? "nil"
         dlog(
@@ -7958,7 +7961,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         if let window {
             mainWindowVisibilityController.focusForInWindowCommand(window, reason: .fileSearchFocus)
         }
-        let result = context.keyboardFocusCoordinator.focusFileSearch()
+        let result = focusController.focusFileSearch(prefillQuery: selectedQuery)
+        if result, selectedQuery == nil, let selectedPanel {
+            let requestID = focusController.fileSearchSelectionRequestID
+            Task { [weak focusController] in
+                guard case .snapshot(let snapshot) = await selectedPanel.readSurfaceSelection() else { return }
+                focusController?.prefillFileSearchFromSelection(snapshot.text, requestID: requestID)
+            }
+        }
 #if DEBUG
         let afterResponder = window?.firstResponder.map { String(describing: type(of: $0)) } ?? "nil"
         dlog(

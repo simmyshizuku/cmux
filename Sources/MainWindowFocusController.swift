@@ -76,6 +76,9 @@ final class MainWindowFocusController {
     private var rememberedRightSidebarMode: RightSidebarMode?
     private var nextRightSidebarFocusRequestId: UInt64 = 0
     private var rightSidebarFocusState: RightSidebarFocusState = .inactive
+    private var pendingFileSearchQuery: String?
+    private var fileSearchQueryBeforePrefill: String?
+    private(set) var fileSearchSelectionRequestID: UInt64 = 0
     /// The right sidebar's active mode when it owns focus, else `nil`. Surfaces the
     /// private focus state for the `sidebarMode` keyboard-shortcut context key.
     var activeRightSidebarMode: RightSidebarMode? {
@@ -546,12 +549,31 @@ final class MainWindowFocusController {
     }
 
     @discardableResult
-    func focusFileSearch() -> Bool {
-        return focusRightSidebar(
+    func focusFileSearch(prefillQuery: String? = nil) -> Bool {
+        fileSearchSelectionRequestID &+= 1
+        pendingFileSearchQuery = prefillQuery
+        fileSearchQueryBeforePrefill = nil
+        let result = focusRightSidebar(
             mode: .find,
             target: .searchField,
             terminalYieldReason: "fileSearchFocus"
         )
+        if !result { pendingFileSearchQuery = nil }
+        return result
+    }
+
+    func prefillFileSearchFromSelection(_ selectedText: String, requestID: UInt64) {
+        guard requestID == fileSearchSelectionRequestID,
+              case .rightSidebar(.find) = intent,
+              let query = directoryFindQuery(fromSelectedText: selectedText) else { return }
+        guard let fileSearchHost else {
+            pendingFileSearchQuery = query
+            return
+        }
+        guard let expected = fileSearchQueryBeforePrefill,
+              fileSearchHost.prefillFocusedSearchQuery(query, ifUnchangedFrom: expected) else { return }
+        pendingFileSearchQuery = nil
+        fileSearchQueryBeforePrefill = query
     }
 
     @discardableResult
@@ -651,6 +673,14 @@ final class MainWindowFocusController {
             return FocusedPanelRequest(workspaceId: workspace.id, panelId: panelId)
         }
         return nil
+    }
+
+    func panelOwningSelection(for responder: NSResponder?) -> (any Panel)? {
+        guard let responder,
+              let request = selectedFocusedPanelRequest(owning: responder),
+              let workspace = tabManager?.selectedWorkspace,
+              workspace.id == request.workspaceId else { return nil }
+        return workspace.panels[request.panelId]
     }
 
     private func selectedFocusedBrowserPanelRequest() -> FocusedPanelRequest? {
@@ -764,7 +794,18 @@ final class MainWindowFocusController {
         case .files:
             return fileExplorerHost?.focusOutline() == true
         case .find:
-            return fileSearchHost?.focusSearchField() == true
+            guard let fileSearchHost,
+                  fileSearchHost.focusSearchField() else { return false }
+            if fileSearchQueryBeforePrefill == nil {
+                fileSearchQueryBeforePrefill = fileSearchHost.focusedSearchQuery
+            }
+            if let query = pendingFileSearchQuery,
+               let expected = fileSearchQueryBeforePrefill,
+               fileSearchHost.prefillFocusedSearchQuery(query, ifUnchangedFrom: expected) {
+                pendingFileSearchQuery = nil
+                fileSearchQueryBeforePrefill = query
+            }
+            return true
         case .sessions, .customSidebar:
             return mode == .customSidebar ? focusFallbackRightSidebarHost() : false
         case .machines:
