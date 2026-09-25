@@ -70,6 +70,8 @@ extension KeyboardShortcutSettings.Action {
             .focusResolved
 
         case .openSettings, .openTeamPicker, .reloadConfiguration,
+             .increaseGlobalFontMagnification, .decreaseGlobalFontMagnification,
+             .resetGlobalFontMagnification,
              .showHideAllWindows, .globalSearch,
              .newWindow, .closeWindow, .toggleFullScreen, .quit,
              .toggleSidebar, .newTab, .newBrowserWorkspace, .newCloudWorkspace, .newCloudMachine,

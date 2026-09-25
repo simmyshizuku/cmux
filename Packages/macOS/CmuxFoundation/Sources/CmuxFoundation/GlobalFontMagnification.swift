@@ -138,6 +138,21 @@ public struct GlobalFontMagnification {
         notificationCenter.post(name: Self.didChangeNotification, object: nil)
     }
 
+    /// Moves the stored percent by whole ``stepPercent`` increments and posts
+    /// the live-update notification when the clamped value changes.
+    ///
+    /// - Parameter steps: Positive to magnify, negative to shrink.
+    /// - Returns: The stored percent after the change.
+    @discardableResult
+    public func stepPercent(by steps: Int) -> Int {
+        let current = storedPercent
+        let next = Self.clamp(current + steps * Self.stepPercent)
+        if next != current {
+            setPercent(next)
+        }
+        return next
+    }
+
     /// Restores the default magnification and posts the live-update notification.
     public func resetToDefault() {
         userDefaults.set(Self.defaultPercent, forKey: Self.percentKey)
@@ -245,6 +260,15 @@ public struct GlobalFontMagnification {
     ///   range are clamped before storage.
     public static func setPercent(_ percent: Int) {
         Self().setPercent(percent)
+    }
+
+    /// Moves the standard stored percent by whole ``stepPercent`` increments.
+    ///
+    /// - Parameter steps: Positive to magnify, negative to shrink.
+    /// - Returns: The stored percent after the change.
+    @discardableResult
+    public static func stepPercent(by steps: Int) -> Int {
+        Self().stepPercent(by: steps)
     }
 
     /// Restores the standard stored magnification and posts the live-update notification.

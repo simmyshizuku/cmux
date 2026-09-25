@@ -2103,6 +2103,7 @@
 		3865A0053865A0053865A005 /* GlobalSearchShortcutSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3865B0053865B0053865B005 /* GlobalSearchShortcutSettingsTests.swift */; };
 		8561A0038561A0038561A003 /* GlobalSearchVisiblePopoverShortcutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8561B0038561B0038561B003 /* GlobalSearchVisiblePopoverShortcutTests.swift */; };
 		F11E00000000000000000101 /* GoToFileIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11E00000000000000000100 /* GoToFileIndex.swift */; };
+		F11E00000000000000000201 /* GlobalFontMagnificationShortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11E00000000000000000200 /* GlobalFontMagnificationShortcut.swift */; };
 		CC000000A1B2C3D4E5F60718 /* GotoSplitCycleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC000001A1B2C3D4E5F60718 /* GotoSplitCycleUITests.swift */; };
 		CC2639000000000000000001 /* GotoSplitCycleUITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2639000000000000000002 /* GotoSplitCycleUITestSupport.swift */; };
 		5B11E5A100000000000000B1 /* GPUSpinner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B11E5A100000000000000B2 /* GPUSpinner.swift */; };
@@ -6235,6 +6236,7 @@
 		3865B0053865B0053865B005 /* GlobalSearchShortcutSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalSearchShortcutSettingsTests.swift; sourceTree = "<group>"; };
 		8561B0038561B0038561B003 /* GlobalSearchVisiblePopoverShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalSearchVisiblePopoverShortcutTests.swift; sourceTree = "<group>"; };
 		F11E00000000000000000100 /* GoToFileIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoToFileIndex.swift; sourceTree = "<group>"; };
+		F11E00000000000000000200 /* GlobalFontMagnificationShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalFontMagnificationShortcut.swift; sourceTree = "<group>"; };
 		CC000001A1B2C3D4E5F60718 /* GotoSplitCycleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GotoSplitCycleUITests.swift; sourceTree = "<group>"; };
 		CC2639000000000000000002 /* GotoSplitCycleUITestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debug/UITests/GotoSplitCycleUITestSupport.swift; sourceTree = "<group>"; };
 		5B11E5A100000000000000B2 /* GPUSpinner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sidebar/GPUSpinner.swift; sourceTree = "<group>"; };
@@ -10979,6 +10981,7 @@
 				FE5996040000000000000001 /* FileExplorerRowView.swift */,
 				FE001003 /* FileExplorerSearchController.swift */,
 				F11E00000000000000000100 /* GoToFileIndex.swift */,
+				F11E00000000000000000200 /* GlobalFontMagnificationShortcut.swift */,
 				FE5996050000000000000001 /* FileExplorerSearchField.swift */,
 				A01600A90E464973B8D8122C /* SidebarSearchFieldCoordinator.swift */,
 				C31DD7A6E10E483D915E7F2B /* SidebarSearchFieldView.swift */,
@@ -14404,6 +14407,7 @@
 					8561A0058561A0058561A005 /* GlobalSearchKeyEvent+QueryEditing.swift in Sources */,
 					3865A0083865A0083865A008 /* GlobalSearchPanelCaptureManager.swift in Sources */,
 				F11E00000000000000000101 /* GoToFileIndex.swift in Sources */,
+				F11E00000000000000000201 /* GlobalFontMagnificationShortcut.swift in Sources */,
 				CC2639000000000000000001 /* GotoSplitCycleUITestSupport.swift in Sources */,
 					5B11E5A100000000000000B1 /* GPUSpinner.swift in Sources */,
 					A6AC72010000000000000001 /* GPUSpinnerNSView.swift in Sources */,

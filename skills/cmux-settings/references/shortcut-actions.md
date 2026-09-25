@@ -13,13 +13,16 @@ Values for `shortcuts.bindings.<action>`:
 ## App
 
 - `shortcuts.bindings.closeWindow`
+- `shortcuts.bindings.decreaseGlobalFontMagnification`
 - `shortcuts.bindings.globalSearch`
+- `shortcuts.bindings.increaseGlobalFontMagnification`
 - `shortcuts.bindings.newWindow`
 - `shortcuts.bindings.openFolder`
 - `shortcuts.bindings.openSettings`
 - `shortcuts.bindings.openTeamPicker`
 - `shortcuts.bindings.quit`
 - `shortcuts.bindings.reloadConfiguration`
+- `shortcuts.bindings.resetGlobalFontMagnification`
 - `shortcuts.bindings.sendFeedback`
 - `shortcuts.bindings.showHideAllWindows`
 - `shortcuts.bindings.toggleFullScreen`

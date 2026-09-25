@@ -13,6 +13,21 @@ extension ShortcutAction {
         case .newWindow: return "New Window"
         case .closeWindow: return "Close Window"
         case .toggleFullScreen: return "Toggle Full Screen"
+        case .increaseGlobalFontMagnification:
+            return String(
+                localized: "shortcut.increaseGlobalFontMagnification.label",
+                defaultValue: "Increase Global Font Magnification"
+            )
+        case .decreaseGlobalFontMagnification:
+            return String(
+                localized: "shortcut.decreaseGlobalFontMagnification.label",
+                defaultValue: "Decrease Global Font Magnification"
+            )
+        case .resetGlobalFontMagnification:
+            return String(
+                localized: "shortcut.resetGlobalFontMagnification.label",
+                defaultValue: "Reset Global Font Magnification"
+            )
         case .quit: return "Quit cmux"
         case .toggleSidebar: return "Toggle Left Sidebar"
         case .newTab: return "New Workspace"

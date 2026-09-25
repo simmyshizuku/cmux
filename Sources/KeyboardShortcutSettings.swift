@@ -90,6 +90,9 @@ enum KeyboardShortcutSettings {
         case closeWindow
         case toggleFullScreen
         case quit
+        case increaseGlobalFontMagnification
+        case decreaseGlobalFontMagnification
+        case resetGlobalFontMagnification
         // Titlebar / primary UI
         case toggleSidebar
         case newTab
@@ -246,6 +249,12 @@ enum KeyboardShortcutSettings {
             case .closeWindow: return String(localized: "shortcut.closeWindow.label", defaultValue: "Close Window")
             case .toggleFullScreen: return String(localized: "command.toggleFullScreen.title", defaultValue: "Toggle Full Screen")
             case .quit: return String(localized: "menu.quitCmux", defaultValue: "Quit cmux")
+            case .increaseGlobalFontMagnification:
+                return String(localized: "shortcut.increaseGlobalFontMagnification.label", defaultValue: "Increase Global Font Magnification")
+            case .decreaseGlobalFontMagnification:
+                return String(localized: "shortcut.decreaseGlobalFontMagnification.label", defaultValue: "Decrease Global Font Magnification")
+            case .resetGlobalFontMagnification:
+                return String(localized: "shortcut.resetGlobalFontMagnification.label", defaultValue: "Reset Global Font Magnification")
             case .toggleSidebar: return String(localized: "shortcut.toggleLeftSidebar.label", defaultValue: "Toggle Left Sidebar")
             case .newTab: return String(localized: "shortcut.newWorkspace.label", defaultValue: "New Workspace")
             case .newBrowserWorkspace: return String(localized: "shortcut.newBrowserWorkspace.label", defaultValue: "New Browser Workspace")
@@ -434,6 +443,11 @@ enum KeyboardShortcutSettings {
                 return StoredShortcut(key: "f", command: true, shift: false, option: false, control: true)
             case .quit:
                 return StoredShortcut(key: "q", command: true, shift: false, option: false, control: false)
+            case .increaseGlobalFontMagnification, .decreaseGlobalFontMagnification,
+                 .resetGlobalFontMagnification:
+                // Unbound by default: Cmd+=/-/0 already zoom the focused
+                // terminal, browser, or viewer, so users pick their own chord.
+                return .unbound
             case .toggleSidebar:
                 return StoredShortcut(key: "b", command: true, shift: false, option: false, control: false)
             case .newTab:

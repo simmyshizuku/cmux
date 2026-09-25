@@ -38,7 +38,27 @@ extension ContentView {
                 subtitle: constant(String(localized: "command.sleepyMode.subtitle", defaultValue: "View")),
                 keywords: ["sleepy", "screensaver", "caffeinate", "keep awake", "do not sleep", "lock", "pets", "night"]
             ),
-        ]
+        ] + globalFontMagnificationCommandContributions()
+    }
+
+    private static func globalFontMagnificationCommandContributions() -> [CommandPaletteCommandContribution] {
+        let subtitle = String(localized: "command.globalFontMagnification.subtitle", defaultValue: "View")
+        let baseKeywords = ["zoom", "ui", "interface", "magnification", "magnify", "font", "scale", "text size", "display"]
+        return KeyboardShortcutSettings.Action.globalFontMagnificationActions.map { action in
+            let extraKeywords: [String]
+            switch action {
+            case .increaseGlobalFontMagnification: extraKeywords = ["in", "bigger", "larger", "increase"]
+            case .decreaseGlobalFontMagnification: extraKeywords = ["out", "smaller", "decrease"]
+            default: extraKeywords = ["reset", "actual size", "default", "100%"]
+            }
+            let title = action.label
+            return CommandPaletteCommandContribution(
+                commandId: action.globalFontMagnificationCommandId,
+                title: { _ in title },
+                subtitle: { _ in subtitle },
+                keywords: baseKeywords + extraKeywords
+            )
+        }
     }
 
     static func appendViewZoomCommandContributions(
@@ -97,6 +117,11 @@ extension ContentView {
         }
         registry.register(commandId: "palette.sleepyMode") {
             SleepyModeController.shared.activate()
+        }
+        for action in KeyboardShortcutSettings.Action.globalFontMagnificationActions {
+            registry.register(commandId: action.globalFontMagnificationCommandId) {
+                _ = action.performGlobalFontMagnification()
+            }
         }
     }
 }

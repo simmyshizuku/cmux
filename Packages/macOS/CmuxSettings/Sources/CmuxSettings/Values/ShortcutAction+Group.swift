@@ -3,7 +3,9 @@ extension ShortcutAction {
     public var group: Group {
         switch self {
         case .openSettings, .openTeamPicker, .reloadConfiguration, .showHideAllWindows, .globalSearch,
-             .newWindow, .closeWindow, .toggleFullScreen, .quit:
+             .newWindow, .closeWindow, .toggleFullScreen, .quit,
+             .increaseGlobalFontMagnification, .decreaseGlobalFontMagnification,
+             .resetGlobalFontMagnification:
             return .app
         case .toggleSidebar, .newTab, .newBrowserWorkspace, .newCloudWorkspace, .newCloudMachine, .saveLayoutTemplate, .openFolder, .reopenPreviousSession, .goToWorkspace, .goToFile,
              .commandPalette, .commandPaletteNext, .commandPalettePrevious, .sendFeedback,

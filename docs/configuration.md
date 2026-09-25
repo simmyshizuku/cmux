@@ -167,6 +167,24 @@ The spinner is compositor-driven (a Core Animation transform run by the render s
 
 Cmd+Ctrl+= and Cmd+Ctrl+- increase or decrease every terminal in the selected workspace by one point. Cmd+Ctrl+0 resets them to the current Ghostty font size. Hidden, hibernated, and Dock terminals change with visible terminals, and newly created terminals inherit the workspace size. Rebind them with `shortcuts.bindings.increaseWorkspaceTerminalFontSize`, `shortcuts.bindings.decreaseWorkspaceTerminalFontSize`, and `shortcuts.bindings.resetWorkspaceTerminalFontSize`.
 
+Pinching the trackpad over a terminal changes that terminal's font size, the same as Cmd+= and Cmd+-. In the canvas layout, pinch zooms the canvas instead.
+
+## Global Font Magnification shortcuts
+
+Global Font Magnification (Settings > App, `app.globalFontMagnification`) scales cmux's own UI and terminals together, which helps when moving between displays of different sizes. It has no default shortcuts. Bind `shortcuts.bindings.increaseGlobalFontMagnification`, `shortcuts.bindings.decreaseGlobalFontMagnification`, and `shortcuts.bindings.resetGlobalFontMagnification` in Settings > Keyboard Shortcuts or in `cmux.json` to step it by 10% or return it to 100%. The same three actions are also in the command palette.
+
+```json
+{
+  "shortcuts": {
+    "bindings": {
+      "increaseGlobalFontMagnification": "cmd+ctrl+opt+=",
+      "decreaseGlobalFontMagnification": "cmd+ctrl+opt+-",
+      "resetGlobalFontMagnification": "cmd+ctrl+opt+0"
+    }
+  }
+}
+```
+
 ## New Cloud Workspace shortcut and the plus-button menu
 
 Cmd+Shift+Y creates a workspace on the machine that owns the most recently selected Cloud workspace. If no valid Cloud workspace is remembered, it uses the first machine in the current right-hand Cloud sidebar order, including pins and manual reordering. Cmd+Y opens the New Machine flow to provision a machine deliberately. Rebind or unbind these shortcuts from Settings > Keyboard Shortcuts or with `shortcuts.bindings.newCloudWorkspace` and `shortcuts.bindings.newCloudMachine`. Both are inert unless Cloud Machines is enabled and the account is signed in.

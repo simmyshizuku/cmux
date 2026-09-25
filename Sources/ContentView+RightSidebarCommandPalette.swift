@@ -11,6 +11,10 @@ extension ContentView {
         if let rightSidebarModeAction = commandPaletteRightSidebarModeShortcutAction(forCommandID: commandId) {
             return rightSidebarModeAction
         }
+        if let magnificationAction = KeyboardShortcutSettings.Action.globalFontMagnificationActions
+            .first(where: { $0.globalFontMagnificationCommandId == commandId }) {
+            return magnificationAction
+        }
 
         switch commandId {
         case "palette.newWorkspace":

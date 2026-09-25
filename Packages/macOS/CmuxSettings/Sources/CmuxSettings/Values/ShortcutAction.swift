@@ -17,6 +17,12 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case closeWindow
     case toggleFullScreen
     case quit
+    /// Raises the app-wide font magnification by one step.
+    case increaseGlobalFontMagnification
+    /// Lowers the app-wide font magnification by one step.
+    case decreaseGlobalFontMagnification
+    /// Restores the app-wide font magnification to 100%.
+    case resetGlobalFontMagnification
 
     // MARK: Workspace
     case toggleSidebar

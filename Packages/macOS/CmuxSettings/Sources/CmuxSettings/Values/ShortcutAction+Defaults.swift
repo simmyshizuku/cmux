@@ -75,6 +75,9 @@ extension ShortcutAction {
         case .newWindow: return ShortcutStroke(key: "n", command: true, shift: true)
         case .closeWindow: return ShortcutStroke(key: "w", command: true, control: true)
         case .toggleFullScreen: return ShortcutStroke(key: "f", command: true, control: true)
+        case .increaseGlobalFontMagnification, .decreaseGlobalFontMagnification,
+             .resetGlobalFontMagnification:
+            return nil
         case .quit: return ShortcutStroke(key: "q", command: true)
         case .toggleSidebar: return ShortcutStroke(key: "b", command: true)
         case .newTab: return ShortcutStroke(key: "n", command: true)

@@ -15007,6 +15007,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             reloadConfiguration(source: "shortcut.reloadConfiguration")
             return true
         }
+        for action in KeyboardShortcutSettings.Action.globalFontMagnificationActions
+        where matchConfiguredShortcut(event: event, action: action) {
+            return action.performGlobalFontMagnification()
+        }
 
         if matchConfiguredShortcut(event: event, action: .toggleFullScreen) {
             guard let targetWindow = mainWindowForShortcutEvent(event) else {

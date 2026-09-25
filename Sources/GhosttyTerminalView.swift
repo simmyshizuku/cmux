@@ -4046,6 +4046,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
     /// `TerminalRendererWindowVisibility`). Weak: windows come and go.
     private static let windowsThatReportedVisible = NSHashTable<NSWindow>.weakObjects()
     private var lastScrollEventTime: CFTimeInterval = 0
+    private var pinchFontSizeAccumulator = TerminalPinchFontSizeAccumulator()
     private let scrollSpeedAccumulator = TerminalScrollSpeedAccumulator()
     private var visibleInUI: Bool = true
     private var pendingSurfaceSize: CGSize?
@@ -8917,6 +8918,21 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         hasPendingLeftMouseRelease
     }
 #endif
+
+    /// Trackpad pinch steps this terminal's font size, like Cmd+= / Cmd+-.
+    /// Canvas layouts intercept pinch first to zoom the canvas instead.
+    override func magnify(with event: NSEvent) {
+        if event.phase.contains(.began) || event.phase.contains(.mayBegin) {
+            pinchFontSizeAccumulator.reset()
+        }
+        let steps = pinchFontSizeAccumulator.consume(event.magnification)
+        if let action = TerminalPinchFontSizeAccumulator.bindingAction(forSteps: steps) {
+            _ = terminalSurface?.performExplicitInputBindingAction(action)
+        }
+        if event.phase.contains(.ended) || event.phase.contains(.cancelled) {
+            pinchFontSizeAccumulator.reset()
+        }
+    }
 
     override func scrollWheel(with event: NSEvent) {
         if routeInputDuringClipboardRead(event) { return }
