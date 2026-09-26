@@ -262,6 +262,7 @@
 		604500100000000000000005 /* AppDelegate+WindowIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 604500100000000000000006 /* AppDelegate+WindowIdentity.swift */; };
 		6FE0DE24F830492F8C509AB3 /* AppDelegate+WindowTearOff.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E9C3BC51E6400B8EE37DF4 /* AppDelegate+WindowTearOff.swift */; };
 		A5FB1207 /* AppDelegate+WorkspaceActionSave.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5FB1208 /* AppDelegate+WorkspaceActionSave.swift */; };
+		7068E413A6E1404193A53145 /* AppDelegate+WorkspaceGroupWindowMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C37E0523A6744968E1E36E3 /* AppDelegate+WorkspaceGroupWindowMove.swift */; };
 		F87910180000000000000001 /* AppDelegate+WorkspaceTerminalFontSizeDebug.swift in Sources */ = {isa = PBXBuildFile; fileRef = F87910180000000000000002 /* AppDelegate+WorkspaceTerminalFontSizeDebug.swift */; };
 		357DF9BBBB0D71C5EE23D997 /* AppDelegate+WorkspaceTodoShortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E213BAD49ECD0698B3471B /* AppDelegate+WorkspaceTodoShortcut.swift */; };
 		A5001093 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001090 /* AppDelegate.swift */; };
@@ -4522,6 +4523,7 @@
 		604500100000000000000006 /* AppDelegate+WindowIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+WindowIdentity.swift"; sourceTree = "<group>"; };
 		C4E9C3BC51E6400B8EE37DF4 /* AppDelegate+WindowTearOff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+WindowTearOff.swift"; sourceTree = "<group>"; };
 		A5FB1208 /* AppDelegate+WorkspaceActionSave.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+WorkspaceActionSave.swift"; sourceTree = "<group>"; };
+		6C37E0523A6744968E1E36E3 /* AppDelegate+WorkspaceGroupWindowMove.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+WorkspaceGroupWindowMove.swift"; sourceTree = "<group>"; };
 		F87910180000000000000002 /* AppDelegate+WorkspaceTerminalFontSizeDebug.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Debug/AppDelegate+WorkspaceTerminalFontSizeDebug.swift"; sourceTree = "<group>"; };
 		D7E213BAD49ECD0698B3471B /* AppDelegate+WorkspaceTodoShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+WorkspaceTodoShortcut.swift"; sourceTree = "<group>"; };
 		A5001090 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -9903,6 +9905,7 @@
 				3D94642C6F394BDD9A97DD3C /* DockSplitStore+TransferTitle.swift */,
 				7B83D7EBDE294F62B0641D58 /* AppDelegate+MoveBonsplitTab.swift */,
 				C4E9C3BC51E6400B8EE37DF4 /* AppDelegate+WindowTearOff.swift */,
+				6C37E0523A6744968E1E36E3 /* AppDelegate+WorkspaceGroupWindowMove.swift */,
 				52ACFA4197424088998A76C0 /* Workspace+RightSidebarToolDrop.swift */,
 				AEEB5E400E684891ABF90AE6 /* RightSidebarModeDragPayload.swift */,
 				9DC68FE25B9640288A48D4E9 /* RightSidebarToolDragPayload.swift */,
@@ -13422,6 +13425,7 @@
 				604500100000000000000005 /* AppDelegate+WindowIdentity.swift in Sources */,
 				6FE0DE24F830492F8C509AB3 /* AppDelegate+WindowTearOff.swift in Sources */,
 				A5FB1207 /* AppDelegate+WorkspaceActionSave.swift in Sources */,
+				7068E413A6E1404193A53145 /* AppDelegate+WorkspaceGroupWindowMove.swift in Sources */,
 				F87910180000000000000001 /* AppDelegate+WorkspaceTerminalFontSizeDebug.swift in Sources */,
 				357DF9BBBB0D71C5EE23D997 /* AppDelegate+WorkspaceTodoShortcut.swift in Sources */,
 				A5001093 /* AppDelegate.swift in Sources */,

@@ -130,16 +130,71 @@ extension AppDelegate {
         return (preview.image, preview.thumbnailSize)
     }
 
+    /// Captures a dragged sidebar row: the window itself when the row's
+    /// workspace is the one on screen, otherwise a titled card. A group
+    /// header drag (its anchor's id, or an empty group's own id) is titled
+    /// with the group name.
     private func captureWorkspacePreview(workspaceId: UUID) -> WindowTearOffPreview? {
-        guard let manager = tabManagerFor(tabId: workspaceId),
-              let workspace = manager.tabs.first(where: { $0.id == workspaceId }),
+        let group = workspaceGroupIdForHeaderDrag(workspaceId).flatMap { groupId in
+            tabManagerFor(workspaceGroupId: groupId)?.workspaceGroups.first { $0.id == groupId }
+        }
+        guard let manager = tabManagerFor(tabId: workspaceId)
+                ?? group.flatMap({ tabManagerFor(workspaceGroupId: $0.id) }),
               let windowId = windowId(for: manager),
               let window = mainWindow(for: windowId) else {
             return nil
         }
+        let title = group?.name
+            ?? manager.tabs.first(where: { $0.id == workspaceId })?.title
+            ?? ""
         let image = (manager.selectedTabId == workspaceId ? WindowTearOffSnapshot.image(of: window) : nil)
-            ?? WindowTearOffSnapshot.placeholder(title: workspace.title, size: window.frame.size)
+            ?? WindowTearOffSnapshot.placeholder(title: title, size: window.frame.size)
         return WindowTearOffPreview(key: workspaceId, image: image)
+    }
+
+    /// Moves a whole workspace group into a new window centered on
+    /// `screenPoint`, growing it out of the drag thumbnail. When the group is
+    /// everything its window holds, that window moves instead.
+    ///
+    /// - Parameters:
+    ///   - groupId: The group to tear off.
+    ///   - screenPoint: The release point in screen coordinates.
+    ///   - draggedId: The dragged header's identity, which keys its preview.
+    /// - Returns: `true` when the group now lives at the point.
+    @discardableResult
+    func tearOffWorkspaceGroup(_ groupId: UUID, atScreenPoint screenPoint: NSPoint, draggedId: UUID) -> Bool {
+        let preview = WindowTearOffPreviewCache.shared.take(for: draggedId)
+        guard shouldTearOffDrag(atScreenPoint: screenPoint),
+              let sourceManager = tabManagerFor(workspaceGroupId: groupId),
+              let sourceWindowId = windowId(for: sourceManager) else {
+            return false
+        }
+        let frame = tearOffFrame(sourceWindowId: sourceWindowId, screenPoint: screenPoint)
+        let memberCount = sourceManager.tabs.filter { $0.groupId == groupId }.count
+        if memberCount > 0, memberCount == sourceManager.tabs.count {
+            guard let window = mainWindow(for: sourceWindowId) else { return false }
+            window.setFrame(frame, display: true)
+            growTornOffWindow(sourceWindowId, from: preview, at: screenPoint)
+            _ = focusMainWindow(windowId: sourceWindowId)
+            return true
+        }
+
+        let windowId = createMainWindow(initialFrame: frame)
+        guard let destinationManager = tabManagerFor(windowId: windowId) else { return false }
+        growTornOffWindow(windowId, from: preview, at: screenPoint)
+        let bootstrapWorkspaceId = destinationManager.tabs.first?.id
+        guard moveWorkspaceGroupToWindow(groupId: groupId, windowId: windowId, focus: true) else {
+            _ = closeMainWindow(windowId: windowId, recordHistory: false)
+            return false
+        }
+        closeBootstrapWorkspace(bootstrapWorkspaceId, in: destinationManager)
+#if DEBUG
+        cmuxDebugLog(
+            "tearOff.group group=\(groupId.uuidString.prefix(5)) members=\(memberCount) " +
+            "sourceWin=\(sourceWindowId.uuidString.prefix(5)) newWin=\(windowId.uuidString.prefix(5))"
+        )
+#endif
+        return true
     }
 
     /// Moves workspaces into a new window centered on `screenPoint`, keeping

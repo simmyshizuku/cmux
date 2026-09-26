@@ -12696,8 +12696,7 @@ struct VerticalTabsSidebar: View, Equatable {
             tearOffDraggedWorkspaces(draggedId: draggedId, screenPoint: screenPoint)
         }
         actions.tearOffWorkspacePreview = { draggedId, screenPoint in
-            guard canTearOffDraggedWorkspace(draggedId) else { return nil }
-            return AppDelegate.shared?.tearOffDragPreview(forWorkspace: draggedId, atScreenPoint: screenPoint)
+            AppDelegate.shared?.tearOffDragPreview(forWorkspace: draggedId, atScreenPoint: screenPoint)
         }
         actions.workspaceGroupAnchorIdsForDrag = { [weak tabManager] in
             guard let tabManager else { return [:] }
@@ -14458,15 +14457,6 @@ struct VerticalTabsSidebar: View, Equatable {
         if tabManager.tabs.contains(where: { $0.id == dragId }) {
             // A source view can rebuild while AppKit keeps its drag alive. The
             // registry session preserves source ownership across that rebuild.
-            let isSourceGroupAnchor = tabManager.workspaceGroups.contains {
-                $0.anchorWorkspaceId == dragId
-            }
-            guard !SidebarWorkspaceDragActivationPolicy().shouldRejectMirroring(
-                isLocalWorkspace: true,
-                isSourceGroupAnchor: isSourceGroupAnchor
-            ) else {
-                return false
-            }
             return dragState.activateDragging(tabId: dragId)
         }
         if tabManager.workspaceGroups.contains(where: { $0.id == dragId && $0.isEmpty }) {
@@ -14475,20 +14465,22 @@ struct VerticalTabsSidebar: View, Equatable {
             // is still a local group-slot drag and must be re-armed here.
             return dragState.activateDragging(tabId: dragId)
         }
-        guard let sourceManager = AppDelegate.shared?.tabManagerFor(tabId: dragId) else {
-            return false
+        // A foreign drag is a workspace row, or a group header (its anchor's
+        // id, or an empty group's own id) whose whole group moves here.
+        guard let app = AppDelegate.shared else { return false }
+        let foreignGroup = app.workspaceGroupIdForHeaderDrag(dragId).flatMap { groupId in
+            app.tabManagerFor(workspaceGroupId: groupId)?.workspaceGroups.first { $0.id == groupId }
         }
-        let isSourceGroupAnchor = sourceManager.workspaceGroups.contains {
-            $0.liveAnchorWorkspaceId == dragId
-        }
-        guard !SidebarWorkspaceDragActivationPolicy().shouldRejectMirroring(
-            isLocalWorkspace: false,
-            isSourceGroupAnchor: isSourceGroupAnchor
-        ) else {
+        let foreignIsPinned: Bool
+        if let foreignGroup {
+            foreignIsPinned = foreignGroup.isPinned
+        } else if let sourceManager = app.tabManagerFor(tabId: dragId) {
+            foreignIsPinned = sourceManager.tabs.first { $0.id == dragId }?.isPinned ?? false
+        } else {
             return false
         }
         guard dragState.activateDragging(tabId: dragId) else { return false }
-        dragState.foreignDraggedIsPinned = sourceManager.tabs.first { $0.id == dragId }?.isPinned ?? false
+        dragState.foreignDraggedIsPinned = foreignIsPinned
         return true
     }
 
@@ -14716,9 +14708,17 @@ struct VerticalTabsSidebar: View, Equatable {
         proposedInsertionIndex: Int
     ) -> Bool {
         guard let app = AppDelegate.shared,
-              let destinationWindowId = app.windowId(for: tabManager),
-              let sourceManager = app.tabManagerFor(tabId: plan.draggedWorkspaceId),
-              !sourceManager.workspaceGroups.contains(where: { $0.liveAnchorWorkspaceId == plan.draggedWorkspaceId }) else {
+              let destinationWindowId = app.windowId(for: tabManager) else {
+            return false
+        }
+        if let groupId = app.workspaceGroupIdForHeaderDrag(plan.draggedWorkspaceId) {
+            return performCrossWindowWorkspaceGroupDrop(
+                groupId: groupId,
+                destinationWindowId: destinationWindowId,
+                proposedInsertionIndex: proposedInsertionIndex
+            )
+        }
+        guard let sourceManager = app.tabManagerFor(tabId: plan.draggedWorkspaceId) else {
             return false
         }
 
@@ -14767,6 +14767,41 @@ struct VerticalTabsSidebar: View, Equatable {
             lastSidebarSelectionIndex = tabManager.tabs.firstIndex { $0.id == selectedId }
         } else {
             lastSidebarSelectionIndex = nil
+        }
+        return true
+    }
+
+    /// Moves a group dragged in by its header from another window, placing
+    /// it at the drop slot within its pin tier.
+    private func performCrossWindowWorkspaceGroupDrop(
+        groupId: UUID,
+        destinationWindowId: UUID,
+        proposedInsertionIndex: Int
+    ) -> Bool {
+        guard let app = AppDelegate.shared,
+              let isPinned = app.tabManagerFor(workspaceGroupId: groupId)?
+                .workspaceGroups.first(where: { $0.id == groupId })?.isPinned else {
+            return false
+        }
+        let topLevelIds = crossWindowTopLevelWorkspaceIds()
+        let slot = clampedCrossWindowTopLevelSlot(
+            proposedInsertionIndex,
+            draggedIsPinned: isPinned,
+            topLevelIds: topLevelIds,
+            pinnedTopLevelIds: crossWindowTopLevelPinnedWorkspaceIds()
+        )
+        guard app.moveWorkspaceGroupToWindow(
+            groupId: groupId,
+            windowId: destinationWindowId,
+            atIndex: crossWindowRawInsertIndex(forTopLevelSlot: slot, topLevelIds: topLevelIds),
+            focus: true
+        ) else {
+            return false
+        }
+        let memberIds = tabManager.tabs.filter { $0.groupId == groupId }.map(\.id)
+        selectedTabIds = Set(memberIds.prefix(1))
+        lastSidebarSelectionIndex = tabManager.selectedTabId.flatMap { selectedId in
+            tabManager.tabs.firstIndex { $0.id == selectedId }
         }
         return true
     }
@@ -14977,19 +15012,27 @@ struct VerticalTabsSidebar: View, Equatable {
     }
 
     /// Tears a sidebar drag off into a new window. A group header drag
-    /// carries the whole group, which cannot change windows yet, so it
-    /// stays put.
+    /// carries its whole group.
     private func tearOffDraggedWorkspaces(draggedId: UUID, screenPoint: NSPoint) {
         guard let app = AppDelegate.shared,
-              canTearOffDraggedWorkspace(draggedId),
               app.shouldTearOffDrag(atScreenPoint: screenPoint) else { return }
+        if let groupId = app.workspaceGroupIdForHeaderDrag(draggedId) {
+            // The drag source is still unwinding; build the window on the next turn.
+            DispatchQueue.main.async {
+                guard app.tearOffWorkspaceGroup(groupId, atScreenPoint: screenPoint, draggedId: draggedId) else {
+                    return
+                }
+                selectedTabIds.remove(draggedId)
+                syncWorkspaceRowSelectionAfterMutation()
+            }
+            return
+        }
         let movingIds = SidebarWorkspaceDragBlockResolver().movingWorkspaceIds(
             orderedWorkspaceIds: tabManager.tabs.map(\.id),
             selectedIds: selectedTabIds,
             draggedId: draggedId,
             anchorIds: Set(tabManager.workspaceGroups.compactMap(\.liveAnchorWorkspaceId))
         )
-        // The drag source is still unwinding; build the window on the next turn.
         DispatchQueue.main.async {
             guard app.tearOffWorkspaces(
                 movingIds,
@@ -14999,10 +15042,6 @@ struct VerticalTabsSidebar: View, Equatable {
             selectedTabIds.subtract(movingIds)
             syncWorkspaceRowSelectionAfterMutation()
         }
-    }
-
-    private func canTearOffDraggedWorkspace(_ draggedId: UUID) -> Bool {
-        !tabManager.workspaceGroups.contains { $0.liveAnchorWorkspaceId == draggedId }
     }
 
     private func moveWorkspaceRowsToNewWindow(_ workspaceIds: [UUID]) {

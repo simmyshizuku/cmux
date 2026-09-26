@@ -17,28 +17,3 @@ public struct SidebarShortcutHintFreezePolicy {
         return live
     }
 }
-
-/// Decides whether a live native sidebar session may be mirrored across windows.
-public struct SidebarWorkspaceDragActivationPolicy: Sendable {
-    public init() {}
-
-    /// Group anchors cannot move across windows because moving only the anchor
-    /// would dissolve the source group and strand its members.
-    public func shouldRejectRecovery(
-        isLocalWorkspace: Bool,
-        isSourceGroupAnchor: Bool
-    ) -> Bool {
-        !isLocalWorkspace && isSourceGroupAnchor
-    }
-
-    /// Alias retained for call sites that describe the operation as mirroring.
-    public func shouldRejectMirroring(
-        isLocalWorkspace: Bool,
-        isSourceGroupAnchor: Bool
-    ) -> Bool {
-        shouldRejectRecovery(
-            isLocalWorkspace: isLocalWorkspace,
-            isSourceGroupAnchor: isSourceGroupAnchor
-        )
-    }
-}
