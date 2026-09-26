@@ -1435,7 +1435,23 @@ final class SidebarWorkspaceTableController: NSObject, NSTableViewDataSource, NS
         endedAt screenPoint: NSPoint,
         operation: NSDragOperation
     ) {
+        let tearOff = operation.isEmpty ? unplacedWorkspaceTearOff(for: session) : nil
         workspaceDragSessionDidEnd(session: session)
+        tearOff?(screenPoint)
+    }
+
+    /// Captures the tear-off for a release no destination accepted, before
+    /// terminal cleanup clears the drag's workspace identity. AppKit ends an
+    /// Escape-cancelled drag with the same empty operation; only its
+    /// triggering key event tells them apart.
+    private func unplacedWorkspaceTearOff(for session: NSDraggingSession) -> ((NSPoint) -> Void)? {
+        guard activeWorkspaceDraggingSession === session,
+              NSApp.currentEvent?.type != .keyDown,
+              let workspaceId = pendingWorkspaceDragWorkspaceId,
+              let tearOff = (activeWorkspaceDragActions ?? actions)?.tearOffWorkspaceDrag else {
+            return nil
+        }
+        return { screenPoint in tearOff(workspaceId, screenPoint) }
     }
 
     func workspaceDragSessionDidBegin(sourceTableView: NSTableView? = nil) {

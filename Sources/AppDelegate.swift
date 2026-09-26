@@ -5640,8 +5640,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     @discardableResult
-    func moveWorkspaceToNewWindow(workspaceId: UUID, focus: Bool = true) -> UUID? {
-        let windowId = createMainWindow()
+    func moveWorkspaceToNewWindow(workspaceId: UUID, focus: Bool = true, initialFrame: NSRect? = nil) -> UUID? {
+        let windowId = createMainWindow(initialFrame: initialFrame)
         guard let destinationManager = tabManagerFor(windowId: windowId) else { return nil }
         let bootstrapWorkspaceId = destinationManager.tabs.first?.id
 
@@ -10055,6 +10055,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         remapClosedPanelHistoryFromSessionSnapshot: Bool = true,
         excludingStableIdentitiesFromSessionSnapshot: Set<UUID> = [],
         excludingWorkspaceIdsFromSessionSnapshot: Set<UUID> = [],
+        initialFrame: NSRect? = nil,
         restoredSessionSnapshotHandler: (([[UUID: UUID]], TabManager) -> Void)? = nil
     ) -> UUID {
         let isRestoringSessionWindowSnapshot = sessionWindowSnapshot != nil
@@ -10182,7 +10183,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let sourceWindow = resolvedMainWindowSource(preferredSourceWindow)
             ?? sourceContext.flatMap { resolvedWindow(for: $0) }
         let existingFrame = sourceWindow?.frame
-        let restoredFrame = resolvedWindowFrame(from: sessionWindowSnapshot)
+        let restoredFrame = resolvedWindowFrame(from: sessionWindowSnapshot) ?? initialFrame
         let persistedGeometryFrame = (restoredFrame == nil && sourceWindow == nil)
             ? resolvedPersistedWindowGeometryFrame()
             : nil

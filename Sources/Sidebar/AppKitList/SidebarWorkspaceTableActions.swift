@@ -69,6 +69,11 @@ struct SidebarWorkspaceTableActions {
     /// native drag. The table controller caches it for the whole drag so a
     /// multi-row drag does not rescan all groups for every item.
     var workspaceGroupAnchorIdsForDrag: () -> [UUID: UUID] = { [:] }
+    /// Tears the dragged workspace (and the selection block it carries) off
+    /// into a new window when a drag is released where nothing accepted it.
+    /// Receives the dragged workspace id and the release point in screen
+    /// coordinates.
+    var tearOffWorkspaceDrag: ((UUID, NSPoint) -> Void)?
     /// Resolves the identity represented by a rendered row. Empty group
     /// headers use the durable group id; grouped members keep their workspace
     /// id so member drags never accidentally move the anchor.
