@@ -14,6 +14,7 @@ final class SidebarWorkspaceDragImageSwap {
     }
 
     private var savedItems: [SavedItem]?
+    private var savedAnimatesToStart: Bool?
     private let resizeAnimation = DraggingImageResizeAnimation()
 
     /// Shows `preview` as the drag image, or restores the rows' own images
@@ -41,6 +42,10 @@ final class SidebarWorkspaceDragImageSwap {
                 }
             }
             savedItems = saved
+            // A release out here tears off; AppKit's failed-drop slide back to
+            // the row would play before the window appears.
+            savedAnimatesToStart = session.animatesToStartingPositionsOnCancelOrFail
+            session.animatesToStartingPositionsOnCancelOrFail = false
             resizeAnimation.start(
                 session: session,
                 image: preview.image,
@@ -61,6 +66,10 @@ final class SidebarWorkspaceDragImageSwap {
                 item.imageComponentsProvider = saved.imageComponentsProvider
             }
             self.savedItems = nil
+            if let savedAnimatesToStart {
+                session.animatesToStartingPositionsOnCancelOrFail = savedAnimatesToStart
+                self.savedAnimatesToStart = nil
+            }
         }
     }
 

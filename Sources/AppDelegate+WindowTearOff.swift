@@ -54,20 +54,21 @@ extension AppDelegate {
     func tearOffBonsplitTab(_ context: TabDragDetachContext) -> Bool {
         let tabId = context.tab.id.uuid
         let screenPoint = context.screenPoint
-        let preview = WindowTearOffPreviewCache.shared.take(for: tabId)
+        let landing = WindowTearOffPreviewCache.shared.takeLanding(for: tabId, at: screenPoint)
+        defer { landing?.dismiss() }
         guard shouldTearOffDrag(atScreenPoint: screenPoint),
               let located = locateBonsplitSurface(tabId: tabId),
               let sourceWorkspace = located.tabManager.tabs.first(where: { $0.id == located.workspaceId }) else {
             return false
         }
         guard sourceWorkspace.panels.count > 1 else {
-            return tearOffWorkspaces([located.workspaceId], atScreenPoint: screenPoint, preview: preview)
+            return tearOffWorkspaces([located.workspaceId], atScreenPoint: screenPoint, landing: landing)
         }
 
         let frame = tearOffFrame(sourceWindowId: located.windowId, screenPoint: screenPoint)
         let windowId = createMainWindow(initialFrame: frame)
         guard let destinationManager = tabManagerFor(windowId: windowId) else { return false }
-        growTornOffWindow(windowId, from: preview, at: screenPoint)
+        growTornOffWindow(windowId, from: landing)
         let bootstrapWorkspaceId = destinationManager.tabs.first?.id
         guard moveBonsplitTabToNewWorkspace(
             tabId: tabId,
@@ -163,7 +164,8 @@ extension AppDelegate {
     /// - Returns: `true` when the group now lives at the point.
     @discardableResult
     func tearOffWorkspaceGroup(_ groupId: UUID, atScreenPoint screenPoint: NSPoint, draggedId: UUID) -> Bool {
-        let preview = WindowTearOffPreviewCache.shared.take(for: draggedId)
+        let landing = WindowTearOffPreviewCache.shared.takeLanding(for: draggedId, at: screenPoint)
+        defer { landing?.dismiss() }
         guard shouldTearOffDrag(atScreenPoint: screenPoint),
               let sourceManager = tabManagerFor(workspaceGroupId: groupId),
               let sourceWindowId = windowId(for: sourceManager) else {
@@ -174,14 +176,14 @@ extension AppDelegate {
         if memberCount > 0, memberCount == sourceManager.tabs.count {
             guard let window = mainWindow(for: sourceWindowId) else { return false }
             window.setFrame(frame, display: true)
-            growTornOffWindow(sourceWindowId, from: preview, at: screenPoint)
+            growTornOffWindow(sourceWindowId, from: landing)
             _ = focusMainWindow(windowId: sourceWindowId)
             return true
         }
 
         let windowId = createMainWindow(initialFrame: frame)
         guard let destinationManager = tabManagerFor(windowId: windowId) else { return false }
-        growTornOffWindow(windowId, from: preview, at: screenPoint)
+        growTornOffWindow(windowId, from: landing)
         let bootstrapWorkspaceId = destinationManager.tabs.first?.id
         guard moveWorkspaceGroupToWindow(groupId: groupId, windowId: windowId, focus: true) else {
             _ = closeMainWindow(windowId: windowId, recordHistory: false)
@@ -215,15 +217,16 @@ extension AppDelegate {
         atScreenPoint screenPoint: NSPoint,
         draggedWorkspaceId: UUID? = nil
     ) -> Bool {
-        let preview = (draggedWorkspaceId ?? workspaceIds.first)
-            .flatMap { WindowTearOffPreviewCache.shared.take(for: $0) }
-        return tearOffWorkspaces(workspaceIds, atScreenPoint: screenPoint, preview: preview)
+        let landing = (draggedWorkspaceId ?? workspaceIds.first)
+            .flatMap { WindowTearOffPreviewCache.shared.takeLanding(for: $0, at: screenPoint) }
+        defer { landing?.dismiss() }
+        return tearOffWorkspaces(workspaceIds, atScreenPoint: screenPoint, landing: landing)
     }
 
     private func tearOffWorkspaces(
         _ workspaceIds: [UUID],
         atScreenPoint screenPoint: NSPoint,
-        preview: WindowTearOffPreview?
+        landing: WindowTearOffLandingOverlay?
     ) -> Bool {
         guard shouldTearOffDrag(atScreenPoint: screenPoint),
               let firstId = workspaceIds.first,
@@ -239,7 +242,7 @@ extension AppDelegate {
         if orderedIds.count == sourceManager.tabs.count {
             guard let window = mainWindow(for: sourceWindowId) else { return false }
             window.setFrame(frame, display: true)
-            growTornOffWindow(sourceWindowId, from: preview, at: screenPoint)
+            growTornOffWindow(sourceWindowId, from: landing)
             _ = focusMainWindow(windowId: sourceWindowId)
             return true
         }
@@ -251,7 +254,7 @@ extension AppDelegate {
         ) else {
             return false
         }
-        growTornOffWindow(newWindowId, from: preview, at: screenPoint)
+        growTornOffWindow(newWindowId, from: landing)
         var movedIds = [orderedIds[0]]
         for workspaceId in orderedIds.dropFirst()
         where moveWorkspaceToWindow(workspaceId: workspaceId, windowId: newWindowId, focus: false) {
@@ -289,16 +292,11 @@ extension AppDelegate {
         )
     }
 
-    /// Hides a torn-off window and grows its preview from the drag thumbnail
-    /// into the window's frame, then reveals the window. Without a preview
-    /// the window simply appears.
-    private func growTornOffWindow(_ windowId: UUID, from preview: WindowTearOffPreview?, at screenPoint: NSPoint) {
-        guard let preview, let window = mainWindow(for: windowId) else { return }
-        WindowTearOffGrowAnimation.run(
-            image: preview.image,
-            from: preview.thumbnailFrame(at: screenPoint),
-            into: window
-        )
+    /// Grows the landing thumbnail into a torn-off window. Without one the
+    /// window simply appears.
+    private func growTornOffWindow(_ windowId: UUID, from landing: WindowTearOffLandingOverlay?) {
+        guard let landing, let window = mainWindow(for: windowId) else { return }
+        landing.grow(into: window)
     }
 
     /// Removes the empty workspace a new window starts with once real
@@ -343,6 +341,7 @@ final class WindowTearOffPreviewCache {
     static let shared = WindowTearOffPreviewCache()
 
     private var current: WindowTearOffPreview?
+    private var landing: WindowTearOffLandingOverlay?
 
     /// Returns the cached preview for `key`, capturing it first if needed.
     func preview(for key: UUID, capture: () -> WindowTearOffPreview?) -> WindowTearOffPreview? {
@@ -351,46 +350,90 @@ final class WindowTearOffPreviewCache {
         return current
     }
 
-    /// Removes and returns the preview for `key`, if it is the cached one.
-    func take(for key: UUID) -> WindowTearOffPreview? {
-        guard let current, current.key == key else { return nil }
-        self.current = nil
-        return current
+    /// Pins the cached preview for `key` on screen where the drag was
+    /// released. Called synchronously from the drag's completion so the
+    /// thumbnail never disappears before the window grows out of it.
+    func hold(for key: UUID, at screenPoint: NSPoint) {
+        guard landing == nil, let current, current.key == key else { return }
+        landing = WindowTearOffLandingOverlay(preview: current, at: screenPoint)
+    }
+
+    /// Removes and returns the landing thumbnail for `key`, pinning it first
+    /// if it was not held yet. The caller grows or dismisses it.
+    func takeLanding(for key: UUID, at screenPoint: NSPoint) -> WindowTearOffLandingOverlay? {
+        hold(for: key, at: screenPoint)
+        let held = current?.key == key ? landing : nil
+        if current?.key == key {
+            current = nil
+            landing = nil
+        }
+        return held
     }
 
     func discard() {
         current = nil
+        landing?.dismiss()
+        landing = nil
     }
 }
 
-/// The Safari-style release: a borderless copy of the preview grows from the
-/// drag thumbnail to the window's frame, then the real window takes over.
+/// The Safari-style release. At the moment a drag is released, the
+/// thumbnail is pinned on screen exactly where the drag image was, so nothing
+/// blinks while the new window is built; then it grows into the window's
+/// frame and the real window takes over.
+///
+/// The overlay is a click-through window covering the display, with the
+/// thumbnail as a Core Animation layer, so the grow runs on the render server
+/// instead of resizing a window every frame.
 @MainActor
-enum WindowTearOffGrowAnimation {
-    static func run(image: NSImage, from startFrame: NSRect, into window: NSWindow) {
-        guard !startFrame.isEmpty else { return }
-        window.alphaValue = 0
+final class WindowTearOffLandingOverlay {
+    private let overlay: NSWindow
+    private let imageLayer = CALayer()
+    private var isFinished = false
 
-        let overlay = NSWindow(contentRect: startFrame, styleMask: .borderless, backing: .buffered, defer: false)
+    /// Shows `preview`'s thumbnail centered on `screenPoint`.
+    init?(preview: WindowTearOffPreview, at screenPoint: NSPoint) {
+        let thumbnailFrame = preview.thumbnailFrame(at: screenPoint)
+        guard !thumbnailFrame.isEmpty,
+              let screen = NSScreen.screens.first(where: { NSMouseInRect(screenPoint, $0.frame, false) })
+                ?? NSScreen.main else {
+            return nil
+        }
+        overlay = NSWindow(contentRect: screen.frame, styleMask: .borderless, backing: .buffered, defer: false)
         overlay.isReleasedWhenClosed = false
         overlay.isOpaque = false
         overlay.backgroundColor = .clear
-        overlay.hasShadow = true
+        overlay.hasShadow = false
         overlay.ignoresMouseEvents = true
         overlay.level = .floating
-        let imageView = NSImageView(image: image)
-        imageView.imageScaling = .scaleAxesIndependently
-        imageView.wantsLayer = true
-        imageView.layer?.cornerRadius = 10
-        imageView.layer?.masksToBounds = true
-        overlay.contentView = imageView
-        overlay.orderFront(nil)
+        overlay.collectionBehavior = [.transient, .ignoresCycle, .fullScreenAuxiliary]
+        let host = NSView(frame: NSRect(origin: .zero, size: screen.frame.size))
+        host.wantsLayer = true
+        overlay.contentView = host
 
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.24
-            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            overlay.animator().setFrame(window.frame, display: true)
-        } completionHandler: {
+        imageLayer.contents = preview.image
+        imageLayer.contentsGravity = .resize
+        imageLayer.cornerRadius = 10
+        imageLayer.masksToBounds = true
+        imageLayer.contentsScale = screen.backingScaleFactor
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        imageLayer.frame = overlay.convertFromScreen(thumbnailFrame)
+        host.layer?.addSublayer(imageLayer)
+        CATransaction.commit()
+        overlay.orderFront(nil)
+    }
+
+    /// Hides `window`, grows the thumbnail into its frame, then reveals it.
+    func grow(into window: NSWindow) {
+        guard !isFinished else { return }
+        isFinished = true
+        window.alphaValue = 0
+        let targetFrame = overlay.convertFromScreen(window.frame)
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(0.26)
+        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(controlPoints: 0.2, 0.9, 0.3, 1))
+        CATransaction.setCompletionBlock { [overlay] in
             window.alphaValue = 1
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.12
@@ -398,6 +441,20 @@ enum WindowTearOffGrowAnimation {
             } completionHandler: {
                 overlay.orderOut(nil)
             }
+        }
+        imageLayer.frame = targetFrame
+        CATransaction.commit()
+    }
+
+    /// Removes the thumbnail when the tear-off did not happen.
+    func dismiss() {
+        guard !isFinished else { return }
+        isFinished = true
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.12
+            overlay.animator().alphaValue = 0
+        } completionHandler: { [overlay] in
+            overlay.orderOut(nil)
         }
     }
 }

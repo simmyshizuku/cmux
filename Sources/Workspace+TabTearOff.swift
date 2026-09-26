@@ -20,6 +20,9 @@ extension Workspace {
     ) {
         guard let app = AppDelegate.shared,
               app.shouldTearOffDrag(atScreenPoint: context.screenPoint) else { return }
+        // Pin the thumbnail now, as the drag image disappears, so it stays on
+        // screen while the window is built.
+        WindowTearOffPreviewCache.shared.hold(for: context.tab.id.uuid, at: context.screenPoint)
         // Bonsplit reports from AppKit's drag-source completion; build the new
         // window after that callback has fully unwound.
         DispatchQueue.main.async {

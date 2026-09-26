@@ -15016,6 +15016,9 @@ struct VerticalTabsSidebar: View, Equatable {
     private func tearOffDraggedWorkspaces(draggedId: UUID, screenPoint: NSPoint) {
         guard let app = AppDelegate.shared,
               app.shouldTearOffDrag(atScreenPoint: screenPoint) else { return }
+        // Pin the thumbnail now, as the drag image disappears, so it stays on
+        // screen while the window is built.
+        WindowTearOffPreviewCache.shared.hold(for: draggedId, at: screenPoint)
         if let groupId = app.workspaceGroupIdForHeaderDrag(draggedId) {
             // The drag source is still unwinding; build the window on the next turn.
             DispatchQueue.main.async {
