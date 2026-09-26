@@ -93,6 +93,10 @@ final class SidebarWorkspaceTableController: NSObject, NSTableViewDataSource, NS
     private var activeWorkspaceDraggingSession: NSDraggingSession?
     private var activeWorkspaceDragSequenceNumber: Int?
     private var workspaceDragSourceCompletionReceived = false
+    // Tear-off state for the current native drag: where the pointer lands in
+    // a torn-off window, and the drag image swapped for its thumbnail.
+    private var workspaceDragPointerOffsetInWindow: CGSize = .zero
+    private var workspaceDragImageSwap = SidebarWorkspaceDragImageSwap()
     private var pendingWorkspaceDragSessionId: UUID?
     private var pendingWorkspaceDragWorkspaceId: UUID?
     private var hasActiveWorkspaceDragPresentation: Bool {
@@ -1224,6 +1228,10 @@ final class SidebarWorkspaceTableController: NSObject, NSTableViewDataSource, NS
     ) {
         _ = screenPoint
         let draggedRows = Array(rowIndexes)
+        workspaceDragImageSwap = SidebarWorkspaceDragImageSwap()
+        workspaceDragPointerOffsetInWindow = draggedRows.first.flatMap {
+            pointerOffsetInWindowAsFirstRow(tableView, row: $0)
+        } ?? .zero
         let provisionalWriter = pendingWorkspaceDragWriter
         let sourceWriter: SidebarWorkspaceDragPasteboardWriter? = {
             if let sourceView = provisionalWriter?.sourceViewForDrag,
@@ -1451,7 +1459,41 @@ final class SidebarWorkspaceTableController: NSObject, NSTableViewDataSource, NS
               let tearOff = (activeWorkspaceDragActions ?? actions)?.tearOffWorkspaceDrag else {
             return nil
         }
-        return { screenPoint in tearOff(workspaceId, screenPoint) }
+        let pointerOffsetInWindow = workspaceDragPointerOffsetInWindow
+        return { screenPoint in tearOff(workspaceId, screenPoint, pointerOffsetInWindow) }
+    }
+
+    /// Swaps the drag image for a thumbnail of the window the workspace would
+    /// become while the pointer is outside every cmux window.
+    func workspaceDragMoved(session: NSDraggingSession, to screenPoint: NSPoint) {
+        guard activeWorkspaceDraggingSession === session,
+              let workspaceId = pendingWorkspaceDragWorkspaceId,
+              let previewProvider = (activeWorkspaceDragActions ?? actions)?.tearOffWorkspacePreview else {
+            return
+        }
+        let preview = previewProvider(workspaceId, screenPoint, workspaceDragPointerOffsetInWindow)
+        workspaceDragImageSwap.update(session: session, screenPoint: screenPoint, preview: preview)
+    }
+
+    /// Where the pointer would sit, from the window's top-left, if the
+    /// grabbed row were the sidebar's first row with the list unscrolled.
+    /// That is where the row lands in a window that holds only the dragged
+    /// workspaces.
+    private func pointerOffsetInWindowAsFirstRow(_ tableView: NSTableView, row: Int) -> CGSize? {
+        guard let window = tableView.window,
+              let contentView = window.contentView,
+              tableView.numberOfRows > 0,
+              row >= 0, row < tableView.numberOfRows else { return nil }
+        let pointerInWindow = window.convertPoint(fromScreen: NSEvent.mouseLocation)
+        let pointerInTable = tableView.convert(pointerInWindow, from: nil)
+        let rowRect = tableView.rect(ofRow: row)
+        let grabFromRowTop = tableView.isFlipped ? pointerInTable.y - rowRect.minY : rowRect.maxY - pointerInTable.y
+        let firstRowInWindow = tableView.convert(tableView.rect(ofRow: 0), to: nil)
+        let scrollOffset = tableView.enclosingScrollView.map {
+            $0.contentView.bounds.minY + $0.contentInsets.top
+        } ?? 0
+        let firstRowTop = contentView.bounds.height - firstRowInWindow.maxY + scrollOffset
+        return CGSize(width: pointerInWindow.x, height: firstRowTop + grabFromRowTop)
     }
 
     func workspaceDragSessionDidBegin(sourceTableView: NSTableView? = nil) {

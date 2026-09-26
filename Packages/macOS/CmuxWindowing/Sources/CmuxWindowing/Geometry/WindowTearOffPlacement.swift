@@ -49,4 +49,35 @@ public struct WindowTearOffPlacement: Sendable {
         let y = min(max(proposedY, visibleFrame.minY), visibleFrame.maxY - height)
         return CGRect(x: x, y: y, width: width, height: height)
     }
+
+    /// Returns the screen frame of a drag thumbnail for a preview image.
+    ///
+    /// The image is scaled down to at most `maxThumbnailWidth` points wide
+    /// (never up), and placed so the pointer keeps the same relative spot it
+    /// has in the full-size image.
+    ///
+    /// - Parameters:
+    ///   - imageSize: The full-size preview image size.
+    ///   - pointerInImage: The pointer's offset from the image's top-left.
+    ///   - point: The pointer in screen coordinates (origin bottom-left).
+    ///   - maxThumbnailWidth: The widest the thumbnail may be.
+    public func thumbnailFrame(
+        imageSize: CGSize,
+        pointerInImage: CGSize,
+        at point: CGPoint,
+        maxThumbnailWidth: CGFloat = 320
+    ) -> CGRect {
+        guard imageSize.width > 0, imageSize.height > 0 else {
+            return CGRect(origin: point, size: .zero)
+        }
+        let scale = min(1, maxThumbnailWidth / imageSize.width)
+        let width = imageSize.width * scale
+        let height = imageSize.height * scale
+        return CGRect(
+            x: point.x - pointerInImage.width * scale,
+            y: point.y + pointerInImage.height * scale - height,
+            width: width,
+            height: height
+        )
+    }
 }

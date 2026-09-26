@@ -12,6 +12,13 @@ final class SidebarWorkspaceTableViewImpl: NSTableView {
     private var pointerTrackingArea: NSTrackingArea?
     private(set) var lastPointerWindowLocation: NSPoint?
 
+    // The table is the native source of workspace drags.
+    override func draggingSession(_ session: NSDraggingSession, movedTo screenPoint: NSPoint) {
+        super.draggingSession(session, movedTo: screenPoint)
+        (activeWorkspaceDragController ?? workspaceController)?
+            .workspaceDragMoved(session: session, to: screenPoint)
+    }
+
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         if let pointerTrackingArea {

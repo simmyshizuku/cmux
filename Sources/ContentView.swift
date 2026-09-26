@@ -12692,8 +12692,20 @@ struct VerticalTabsSidebar: View, Equatable {
                 }
             )
         )
-        actions.tearOffWorkspaceDrag = { draggedId, screenPoint in
-            tearOffDraggedWorkspaces(draggedId: draggedId, screenPoint: screenPoint)
+        actions.tearOffWorkspaceDrag = { draggedId, screenPoint, pointerOffsetInWindow in
+            tearOffDraggedWorkspaces(
+                draggedId: draggedId,
+                screenPoint: screenPoint,
+                pointerOffsetInWindow: pointerOffsetInWindow
+            )
+        }
+        actions.tearOffWorkspacePreview = { draggedId, screenPoint, pointerOffsetInWindow in
+            guard canTearOffDraggedWorkspace(draggedId) else { return nil }
+            return AppDelegate.shared?.tearOffDragPreview(
+                forWorkspace: draggedId,
+                atScreenPoint: screenPoint,
+                pointerOffsetInWindow: pointerOffsetInWindow
+            )
         }
         actions.workspaceGroupAnchorIdsForDrag = { [weak tabManager] in
             guard let tabManager else { return [:] }
@@ -14975,23 +14987,31 @@ struct VerticalTabsSidebar: View, Equatable {
     /// Tears a sidebar drag off into a new window. A group header drag
     /// carries the whole group, which cannot change windows yet, so it
     /// stays put.
-    private func tearOffDraggedWorkspaces(draggedId: UUID, screenPoint: NSPoint) {
-        let anchorIds = Set(tabManager.workspaceGroups.compactMap(\.liveAnchorWorkspaceId))
+    private func tearOffDraggedWorkspaces(draggedId: UUID, screenPoint: NSPoint, pointerOffsetInWindow: CGSize) {
         guard let app = AppDelegate.shared,
-              !anchorIds.contains(draggedId),
+              canTearOffDraggedWorkspace(draggedId),
               app.shouldTearOffDrag(atScreenPoint: screenPoint) else { return }
         let movingIds = SidebarWorkspaceDragBlockResolver().movingWorkspaceIds(
             orderedWorkspaceIds: tabManager.tabs.map(\.id),
             selectedIds: selectedTabIds,
             draggedId: draggedId,
-            anchorIds: anchorIds
+            anchorIds: Set(tabManager.workspaceGroups.compactMap(\.liveAnchorWorkspaceId))
         )
         // The drag source is still unwinding; build the window on the next turn.
         DispatchQueue.main.async {
-            guard app.tearOffWorkspaces(movingIds, atScreenPoint: screenPoint) else { return }
+            guard app.tearOffWorkspaces(
+                movingIds,
+                atScreenPoint: screenPoint,
+                pointerOffsetInWindow: pointerOffsetInWindow,
+                draggedWorkspaceId: draggedId
+            ) else { return }
             selectedTabIds.subtract(movingIds)
             syncWorkspaceRowSelectionAfterMutation()
         }
+    }
+
+    private func canTearOffDraggedWorkspace(_ draggedId: UUID) -> Bool {
+        !tabManager.workspaceGroups.contains { $0.liveAnchorWorkspaceId == draggedId }
     }
 
     private func moveWorkspaceRowsToNewWindow(_ workspaceIds: [UUID]) {

@@ -66,4 +66,28 @@ struct WindowTearOffPlacementTests {
 
         #expect(frame == CGRect(x: 1_512, y: 0, width: 1_920, height: 1_055))
     }
+
+    @Test("A thumbnail scales down and keeps the pointer's relative spot")
+    func thumbnailKeepsPointerSpot() {
+        let thumbnail = placement.thumbnailFrame(
+            imageSize: CGSize(width: 1_280, height: 800),
+            pointerInImage: CGSize(width: 320, height: 40),
+            at: CGPoint(x: 600, y: 500),
+            maxThumbnailWidth: 320
+        )
+
+        #expect(thumbnail == CGRect(x: 520, y: 310, width: 320, height: 200))
+    }
+
+    @Test("A preview smaller than the thumbnail limit is not scaled up")
+    func smallPreviewIsNotEnlarged() {
+        let thumbnail = placement.thumbnailFrame(
+            imageSize: CGSize(width: 200, height: 100),
+            pointerInImage: CGSize(width: 50, height: 10),
+            at: CGPoint(x: 300, y: 300),
+            maxThumbnailWidth: 320
+        )
+
+        #expect(thumbnail == CGRect(x: 250, y: 210, width: 200, height: 100))
+    }
 }
