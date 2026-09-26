@@ -12692,20 +12692,12 @@ struct VerticalTabsSidebar: View, Equatable {
                 }
             )
         )
-        actions.tearOffWorkspaceDrag = { draggedId, screenPoint, pointerOffsetInWindow in
-            tearOffDraggedWorkspaces(
-                draggedId: draggedId,
-                screenPoint: screenPoint,
-                pointerOffsetInWindow: pointerOffsetInWindow
-            )
+        actions.tearOffWorkspaceDrag = { draggedId, screenPoint in
+            tearOffDraggedWorkspaces(draggedId: draggedId, screenPoint: screenPoint)
         }
-        actions.tearOffWorkspacePreview = { draggedId, screenPoint, pointerOffsetInWindow in
+        actions.tearOffWorkspacePreview = { draggedId, screenPoint in
             guard canTearOffDraggedWorkspace(draggedId) else { return nil }
-            return AppDelegate.shared?.tearOffDragPreview(
-                forWorkspace: draggedId,
-                atScreenPoint: screenPoint,
-                pointerOffsetInWindow: pointerOffsetInWindow
-            )
+            return AppDelegate.shared?.tearOffDragPreview(forWorkspace: draggedId, atScreenPoint: screenPoint)
         }
         actions.workspaceGroupAnchorIdsForDrag = { [weak tabManager] in
             guard let tabManager else { return [:] }
@@ -14987,7 +14979,7 @@ struct VerticalTabsSidebar: View, Equatable {
     /// Tears a sidebar drag off into a new window. A group header drag
     /// carries the whole group, which cannot change windows yet, so it
     /// stays put.
-    private func tearOffDraggedWorkspaces(draggedId: UUID, screenPoint: NSPoint, pointerOffsetInWindow: CGSize) {
+    private func tearOffDraggedWorkspaces(draggedId: UUID, screenPoint: NSPoint) {
         guard let app = AppDelegate.shared,
               canTearOffDraggedWorkspace(draggedId),
               app.shouldTearOffDrag(atScreenPoint: screenPoint) else { return }
@@ -15002,7 +14994,6 @@ struct VerticalTabsSidebar: View, Equatable {
             guard app.tearOffWorkspaces(
                 movingIds,
                 atScreenPoint: screenPoint,
-                pointerOffsetInWindow: pointerOffsetInWindow,
                 draggedWorkspaceId: draggedId
             ) else { return }
             selectedTabIds.subtract(movingIds)

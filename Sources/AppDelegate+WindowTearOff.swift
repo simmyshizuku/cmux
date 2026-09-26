@@ -5,8 +5,8 @@ import Foundation
 
 /// Tearing a pane tab or sidebar workspace off into its own window, the way
 /// Safari handles a tab dragged out of its window: past the window edge the
-/// drag becomes a thumbnail of the new window, and on release the window
-/// grows out of that thumbnail.
+/// drag grows into a thumbnail of the new window centered on the pointer,
+/// and on release the window grows out of that thumbnail from its center.
 ///
 /// Both drag sources ask for the same preview while they are outside every
 /// cmux window and report the same release; this is the single action path
@@ -40,17 +40,14 @@ extension AppDelegate {
         guard let preview = WindowTearOffPreviewCache.shared.preview(for: tabId, capture: {
             capturePanePreview(tabId: tabId, context: context)
         }) else { return nil }
-        return TabDragDetachedPreview(
-            image: preview.image,
-            frame: preview.thumbnailFrame(at: context.screenPoint)
-        )
+        return TabDragDetachedPreview(image: preview.image, size: preview.thumbnailSize)
     }
 
-    /// Moves a pane tab into a new window placed so the pointer lands on the
-    /// tab, growing it out of the drag thumbnail.
+    /// Moves a pane tab into a new window centered on the pointer, growing it
+    /// out of the drag thumbnail.
     ///
     /// A tab that is its workspace's only surface carries the whole
-    /// workspace, so it tears off through ``tearOffWorkspaces(_:atScreenPoint:pointerOffsetInWindow:)``.
+    /// workspace, so it tears off through ``tearOffWorkspaces(_:atScreenPoint:draggedWorkspaceId:)``.
     ///
     /// - Returns: `true` when the tab now lives in a new or moved window.
     @discardableResult
@@ -63,27 +60,11 @@ extension AppDelegate {
               let sourceWorkspace = located.tabManager.tabs.first(where: { $0.id == located.workspaceId }) else {
             return false
         }
-        // In the new window the tab is the first tab of a pane that fills
-        // the workspace area, which sits where the source's does.
-        let container = sourceWorkspace.bonsplitController.layoutSnapshot().containerFrame
-        let pointerOffsetInWindow = CGSize(
-            width: CGFloat(container.x) + context.pointerOffsetInPane.width,
-            height: CGFloat(container.y) + context.pointerOffsetInPane.height
-        )
         guard sourceWorkspace.panels.count > 1 else {
-            return tearOffWorkspaces(
-                [located.workspaceId],
-                atScreenPoint: screenPoint,
-                pointerOffsetInWindow: pointerOffsetInWindow,
-                preview: preview
-            )
+            return tearOffWorkspaces([located.workspaceId], atScreenPoint: screenPoint, preview: preview)
         }
 
-        let frame = tearOffFrame(
-            sourceWindowId: located.windowId,
-            screenPoint: screenPoint,
-            pointerOffsetInWindow: pointerOffsetInWindow
-        )
+        let frame = tearOffFrame(sourceWindowId: located.windowId, screenPoint: screenPoint)
         let windowId = createMainWindow(initialFrame: frame)
         guard let destinationManager = tabManagerFor(windowId: windowId) else { return false }
         growTornOffWindow(windowId, from: preview, at: screenPoint)
@@ -101,7 +82,7 @@ extension AppDelegate {
 #if DEBUG
         cmuxDebugLog(
             "tearOff.tab tab=\(tabId.uuidString.prefix(5)) sourceWin=\(located.windowId.uuidString.prefix(5)) " +
-            "newWin=\(windowId.uuidString.prefix(5)) offset=\(Int(pointerOffsetInWindow.width)),\(Int(pointerOffsetInWindow.height))"
+            "newWin=\(windowId.uuidString.prefix(5))"
         )
 #endif
         return true
@@ -127,35 +108,29 @@ extension AppDelegate {
             title: context.tab.title,
             size: paneRect?.size ?? window.frame.size
         )
-        return WindowTearOffPreview(key: tabId, image: image, pointerInImage: context.pointerOffsetInPane)
+        return WindowTearOffPreview(key: tabId, image: image)
     }
 
     // MARK: - Workspaces
 
     /// The drag image for a sidebar workspace outside every window: a
-    /// thumbnail of its window, or `nil` while the pointer is over a window.
-    ///
-    /// - Parameters:
-    ///   - workspaceId: The dragged workspace.
-    ///   - screenPoint: The pointer in screen coordinates.
-    ///   - pointerOffsetInWindow: Where the pointer lands in the new window,
-    ///     from its top-left.
+    /// thumbnail of its window and its on-screen size, or `nil` while the
+    /// pointer is over a window.
     func tearOffDragPreview(
         forWorkspace workspaceId: UUID,
-        atScreenPoint screenPoint: NSPoint,
-        pointerOffsetInWindow: CGSize
-    ) -> (image: NSImage, frame: NSRect)? {
+        atScreenPoint screenPoint: NSPoint
+    ) -> (image: NSImage, size: NSSize)? {
         guard shouldTearOffDrag(atScreenPoint: screenPoint) else {
             WindowTearOffPreviewCache.shared.discard()
             return nil
         }
         guard let preview = WindowTearOffPreviewCache.shared.preview(for: workspaceId, capture: {
-            captureWorkspacePreview(workspaceId: workspaceId, pointerOffsetInWindow: pointerOffsetInWindow)
+            captureWorkspacePreview(workspaceId: workspaceId)
         }) else { return nil }
-        return (preview.image, preview.thumbnailFrame(at: screenPoint))
+        return (preview.image, preview.thumbnailSize)
     }
 
-    private func captureWorkspacePreview(workspaceId: UUID, pointerOffsetInWindow: CGSize) -> WindowTearOffPreview? {
+    private func captureWorkspacePreview(workspaceId: UUID) -> WindowTearOffPreview? {
         guard let manager = tabManagerFor(tabId: workspaceId),
               let workspace = manager.tabs.first(where: { $0.id == workspaceId }),
               let windowId = windowId(for: manager),
@@ -164,43 +139,35 @@ extension AppDelegate {
         }
         let image = (manager.selectedTabId == workspaceId ? WindowTearOffSnapshot.image(of: window) : nil)
             ?? WindowTearOffSnapshot.placeholder(title: workspace.title, size: window.frame.size)
-        return WindowTearOffPreview(key: workspaceId, image: image, pointerInImage: pointerOffsetInWindow)
+        return WindowTearOffPreview(key: workspaceId, image: image)
     }
 
-    /// Moves workspaces into a new window placed at `screenPoint`, keeping
+    /// Moves workspaces into a new window centered on `screenPoint`, keeping
     /// their sidebar order. When they are every workspace of their window,
     /// that window moves to the point instead, since tearing off everything
     /// would leave an empty window behind.
     ///
     /// - Parameters:
     ///   - workspaceIds: Workspaces from one window; the last one that moves
-    ///     is selected. The first one is the dragged workspace whose preview
-    ///     the window grows out of.
+    ///     is selected.
     ///   - screenPoint: The release point in screen coordinates.
-    ///   - pointerOffsetInWindow: Where the pointer lands in the new window,
-    ///     from its top-left.
+    ///   - draggedWorkspaceId: The workspace whose drag preview the window
+    ///     grows out of, if not the first.
     /// - Returns: `true` when at least one workspace now lives at the point.
     @discardableResult
     func tearOffWorkspaces(
         _ workspaceIds: [UUID],
         atScreenPoint screenPoint: NSPoint,
-        pointerOffsetInWindow: CGSize,
         draggedWorkspaceId: UUID? = nil
     ) -> Bool {
         let preview = (draggedWorkspaceId ?? workspaceIds.first)
             .flatMap { WindowTearOffPreviewCache.shared.take(for: $0) }
-        return tearOffWorkspaces(
-            workspaceIds,
-            atScreenPoint: screenPoint,
-            pointerOffsetInWindow: pointerOffsetInWindow,
-            preview: preview
-        )
+        return tearOffWorkspaces(workspaceIds, atScreenPoint: screenPoint, preview: preview)
     }
 
     private func tearOffWorkspaces(
         _ workspaceIds: [UUID],
         atScreenPoint screenPoint: NSPoint,
-        pointerOffsetInWindow: CGSize,
         preview: WindowTearOffPreview?
     ) -> Bool {
         guard shouldTearOffDrag(atScreenPoint: screenPoint),
@@ -212,11 +179,7 @@ extension AppDelegate {
         let requested = Set(workspaceIds)
         let orderedIds = sourceManager.tabs.map(\.id).filter { requested.contains($0) }
         guard !orderedIds.isEmpty else { return false }
-        let frame = tearOffFrame(
-            sourceWindowId: sourceWindowId,
-            screenPoint: screenPoint,
-            pointerOffsetInWindow: pointerOffsetInWindow
-        )
+        let frame = tearOffFrame(sourceWindowId: sourceWindowId, screenPoint: screenPoint)
 
         if orderedIds.count == sourceManager.tabs.count {
             guard let window = mainWindow(for: sourceWindowId) else { return false }
@@ -254,20 +217,17 @@ extension AppDelegate {
 
     // MARK: - Shared
 
-    /// Frame for a torn-off window: the source window's size, on the display
-    /// under the release point, with the pointer at `pointerOffsetInWindow`.
-    private func tearOffFrame(
-        sourceWindowId: UUID,
-        screenPoint: NSPoint,
-        pointerOffsetInWindow: CGSize
-    ) -> NSRect {
+    /// Frame for a torn-off window: the source window's size, centered on the
+    /// release point and kept on the display under it.
+    private func tearOffFrame(sourceWindowId: UUID, screenPoint: NSPoint) -> NSRect {
         let sourceSize = mainWindow(for: sourceWindowId)?.frame.size
             ?? NSSize(width: 1_000, height: 700)
         let screen = NSScreen.screens.first { NSMouseInRect(screenPoint, $0.frame, false) }
             ?? NSScreen.main
         let visibleFrame = screen?.visibleFrame
             ?? NSRect(origin: .zero, size: sourceSize)
-        return WindowTearOffPlacement(pointerOffsetFromTopLeft: pointerOffsetInWindow).frame(
+        let centered = CGSize(width: sourceSize.width / 2, height: sourceSize.height / 2)
+        return WindowTearOffPlacement(pointerOffsetFromTopLeft: centered).frame(
             forWindowSize: sourceSize,
             releasedAt: screenPoint,
             visibleFrame: visibleFrame
@@ -298,19 +258,23 @@ extension AppDelegate {
     }
 }
 
-/// A full-size tear-off preview and where the pointer sits in it.
+/// A full-size tear-off preview. Its thumbnail, like the window that grows
+/// out of it, is centered on the pointer.
 struct WindowTearOffPreview {
     /// The dragged tab or workspace.
     let key: UUID
     let image: NSImage
-    /// The pointer's offset from the image's top-left, in image points.
-    let pointerInImage: CGSize
 
-    /// The thumbnail's screen frame with the pointer at `screenPoint`.
+    /// The thumbnail's on-screen size.
+    var thumbnailSize: NSSize {
+        thumbnailFrame(at: .zero).size
+    }
+
+    /// The thumbnail's screen frame, centered on `screenPoint`.
     func thumbnailFrame(at screenPoint: NSPoint) -> NSRect {
         WindowTearOffPlacement().thumbnailFrame(
             imageSize: image.size,
-            pointerInImage: pointerInImage,
+            pointerInImage: CGSize(width: image.size.width / 2, height: image.size.height / 2),
             at: screenPoint
         )
     }

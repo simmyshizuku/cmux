@@ -71,14 +71,13 @@ struct SidebarWorkspaceTableActions {
     var workspaceGroupAnchorIdsForDrag: () -> [UUID: UUID] = { [:] }
     /// Tears the dragged workspace (and the selection block it carries) off
     /// into a new window when a drag is released where nothing accepted it.
-    /// Receives the dragged workspace id, the release point in screen
-    /// coordinates, and where the pointer should land in the new window
-    /// (from its top-left).
-    var tearOffWorkspaceDrag: ((UUID, NSPoint, CGSize) -> Void)?
-    /// The thumbnail a workspace drag shows outside every window, with its
-    /// screen frame, or `nil` over a window. Same arguments as
-    /// ``tearOffWorkspaceDrag``.
-    var tearOffWorkspacePreview: ((UUID, NSPoint, CGSize) -> (image: NSImage, frame: NSRect)?)?
+    /// Receives the dragged workspace id and the release point in screen
+    /// coordinates.
+    var tearOffWorkspaceDrag: ((UUID, NSPoint) -> Void)?
+    /// The thumbnail a workspace drag shows, centered on the pointer, while
+    /// it is outside every window, or `nil` over a window. Receives the
+    /// dragged workspace id and the pointer in screen coordinates.
+    var tearOffWorkspacePreview: ((UUID, NSPoint) -> (image: NSImage, size: NSSize)?)?
     /// Resolves the identity represented by a rendered row. Empty group
     /// headers use the durable group id; grouped members keep their workspace
     /// id so member drags never accidentally move the anchor.
