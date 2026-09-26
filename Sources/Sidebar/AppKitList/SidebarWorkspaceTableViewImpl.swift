@@ -12,9 +12,11 @@ final class SidebarWorkspaceTableViewImpl: NSTableView {
     private var pointerTrackingArea: NSTrackingArea?
     private(set) var lastPointerWindowLocation: NSPoint?
 
-    // The table is the native source of workspace drags.
+    // The table is the native source of workspace drags. NSTableView declares
+    // this NSDraggingSource method but does not implement it, so calling super
+    // raises an unrecognized-selector exception inside the drag loop and
+    // every drop target stops receiving the drag.
     override func draggingSession(_ session: NSDraggingSession, movedTo screenPoint: NSPoint) {
-        super.draggingSession(session, movedTo: screenPoint)
         (activeWorkspaceDragController ?? workspaceController)?
             .workspaceDragMoved(session: session, to: screenPoint)
     }
