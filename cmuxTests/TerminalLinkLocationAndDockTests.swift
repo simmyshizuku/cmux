@@ -2,6 +2,7 @@ import AppKit
 import Bonsplit
 import Foundation
 import Testing
+import CmuxFilePreviewCore
 import struct CmuxSettings.AppCatalogSection
 
 #if canImport(cmux_DEV)
@@ -13,6 +14,7 @@ import struct CmuxSettings.AppCatalogSection
 @MainActor
 private final class RecordingTerminalLinkContainer: TerminalLinkOpenContainer {
     private(set) var openedFilePaths: [String] = []
+    private(set) var openedLocations: [FilePreviewTextLocation?] = []
 
     var terminalLinkContainerDebugName: String { "recording" }
 
@@ -31,9 +33,11 @@ private final class RecordingTerminalLinkContainer: TerminalLinkOpenContainer {
     func deferTerminalFileLinkOpen(
         sourcePanelId: UUID,
         filePath: String,
+        location: FilePreviewTextLocation?,
         fallback: @escaping @MainActor @Sendable () -> Void
     ) -> Bool {
         openedFilePaths.append(filePath)
+        openedLocations.append(location)
         return true
     }
 
@@ -135,15 +139,70 @@ struct TerminalLinkLocationAndDockTests {
         #expect(externallyOpened.isEmpty)
     }
 
-    @Test("path:line Cmd-click forwards the location to the preferred editor")
+    @Test("path:line Cmd-click forwards the location to the preferred editor when files stay out of cmux")
     @MainActor
     func pathLocationUsesPreferredEditor() async throws {
+        let defaults = makeDefaults()
+        defaults.set(false, forKey: AppCatalogSection().openSupportedFilesInCmux.userDefaultsKey)
+        try await expectLocationOpensInPreferredEditor(fileName: "main.swift", defaults: defaults)
+    }
+
+    @Test("path:line Cmd-click on Markdown keeps the editor, since the viewer has no lines")
+    @MainActor
+    func markdownLocationUsesPreferredEditor() async throws {
+        let defaults = makeDefaults()
+        defaults.set(true, forKey: AppCatalogSection().openMarkdownInCmuxViewer.userDefaultsKey)
+        try await expectLocationOpensInPreferredEditor(fileName: "README.md", defaults: defaults)
+    }
+
+    @Test("path:line Cmd-click opens File Preview at that line when files open in cmux")
+    @MainActor
+    func pathLocationOpensFilePreviewAtLine() throws {
         let defaults = makeDefaults()
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("cmux-terminal-link-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
         let fileURL = root.appendingPathComponent("main.swift")
+        try "print(\"hello\")\n".write(to: fileURL, atomically: true, encoding: .utf8)
+
+        let panelID = UUID()
+        let container = RecordingTerminalLinkContainer()
+        var externallyOpened: [URL] = []
+        let coordinator = TerminalLinkOpenCoordinator(
+            defaults: defaults,
+            containerResolver: { _, sourcePanelID in
+                sourcePanelID == panelID ? container : nil
+            },
+            externalOpen: { openedURL in
+                externallyOpened.append(openedURL)
+                return true
+            },
+            deferOperation: { operation in operation() }
+        )
+
+        #expect(coordinator.open(TerminalLinkOpenRequest(
+            rawValue: "main.swift:42:5",
+            sourceWorkspaceId: nil,
+            sourcePanelId: panelID,
+            workingDirectory: root.path
+        )))
+
+        #expect(container.openedFilePaths == [fileURL.path])
+        #expect(container.openedLocations == [FilePreviewTextLocation(line: 42, column: 5)])
+        #expect(externallyOpened.isEmpty)
+    }
+
+    @MainActor
+    private func expectLocationOpensInPreferredEditor(
+        fileName: String,
+        defaults: UserDefaults
+    ) async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cmux-terminal-link-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let fileURL = root.appendingPathComponent(fileName)
         try "print(\"hello\")\n".write(to: fileURL, atomically: true, encoding: .utf8)
 
         let marker = root.appendingPathComponent("received.txt")

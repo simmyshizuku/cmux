@@ -1,4 +1,5 @@
 import CmuxFoundation
+import CmuxFilePreviewCore
 import AppKit
 import Bonsplit
 import Combine
@@ -1285,6 +1286,10 @@ final class FilePreviewPanel: Panel, ObservableObject, FilePreviewTextEditingPan
 
     private var originalTextContent = ""
     private var textEncoding: String.Encoding = .utf8
+    /// A location requested before the editor was showing the loaded file.
+    private var pendingTextLocation: FilePreviewTextLocation?
+    private var hasLoadedTextContent = false
+    private var shownTextContentRevision: Int?
     private var saveGeneration = 0
     private var activeSaveGeneration: Int?
     var fileContentChangeCoordinator: FileContentChangeCoordinator
@@ -1367,6 +1372,7 @@ final class FilePreviewPanel: Panel, ObservableObject, FilePreviewTextEditingPan
 
     func close() {
         isClosed = true
+        pendingTextLocation = nil
         unbindTabMetadata()
         stopWatchingForFileChanges()
         textLoadCoordinator.cancel()
@@ -1583,6 +1589,7 @@ final class FilePreviewPanel: Panel, ObservableObject, FilePreviewTextEditingPan
         guard previewMode != mode else { return nil }
         if mode != .text {
             textLoadCoordinator.cancel()
+            pendingTextLocation = nil
         }
         previewMode = mode
         setTabMetadataDisplayIcon(FilePreviewKindResolver.iconName(for: mode))
@@ -1623,6 +1630,7 @@ final class FilePreviewPanel: Panel, ObservableObject, FilePreviewTextEditingPan
             isFileUnavailable = true
             return
         case .loaded(let content, let encoding):
+            hasLoadedTextContent = true
             if !replacingDirtyContent && isDirty {
                 originalTextContent = content
                 textEncoding = encoding
@@ -1635,6 +1643,47 @@ final class FilePreviewPanel: Panel, ObservableObject, FilePreviewTextEditingPan
             textEncoding = encoding
             setTabMetadataDirtyState(false)
             isFileUnavailable = false
+        }
+        revealPendingTextLocationIfReady()
+    }
+
+    /// Moves the text editor's caret to `location` and centers that line.
+    ///
+    /// Safe to call before the file has loaded or the editor exists: the
+    /// request waits until the editor shows the loaded text. A later request
+    /// replaces an unrevealed earlier one.
+    func revealTextLocation(_ location: FilePreviewTextLocation) {
+        pendingTextLocation = location
+        revealPendingTextLocationIfReady()
+    }
+
+    /// Opens the Go to Line field over the text editor.
+    ///
+    /// - Returns: `false` when this preview is not showing an editable text file.
+    @discardableResult
+    func presentGoToLine() -> Bool {
+        guard previewMode == .text,
+              let textView = textView as? SavingTextView else { return false }
+        return textView.presentFilePreviewGoToLine()
+    }
+
+    func textEditorDidShowContent(revision: Int) {
+        shownTextContentRevision = revision
+        revealPendingTextLocationIfReady()
+    }
+
+    private func revealPendingTextLocationIfReady() {
+        guard let location = pendingTextLocation,
+              previewMode == .text,
+              hasLoadedTextContent,
+              shownTextContentRevision == textContentRevision,
+              let textView = textView as? SavingTextView,
+              textView.window != nil else { return }
+        pendingTextLocation = nil
+        // Defer one turn so a freshly mounted editor has a laid-out clip view
+        // to center in.
+        DispatchQueue.main.async { [weak textView] in
+            textView?.revealFilePreviewLocation(location)
         }
     }
 

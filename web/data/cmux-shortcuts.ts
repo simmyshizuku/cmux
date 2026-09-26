@@ -386,6 +386,12 @@ export const shortcutCategories: ShortcutCategory[] = [
         description: { en: "Save file preview", ja: "ファイルプレビューを保存" },
         note: { en: "focused text preview", ja: "フォーカス中のテキストプレビュー" },
       },
+      {
+        id: "filePreviewGoToLine",
+        combos: [["⌃", "G"]],
+        description: { en: "Go to line in file preview (line or line:column)", ja: "ファイルプレビューで行へ移動（行 または 行:列）" },
+        note: { en: "focused text preview", ja: "フォーカス中のテキストプレビュー" },
+      },
     ],
   },
   {

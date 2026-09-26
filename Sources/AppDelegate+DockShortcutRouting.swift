@@ -45,7 +45,7 @@ extension KeyboardShortcutSettings.Action {
              .cycleTextBoxSubmitAction,
              .fileExplorerOpenSelection,
              .fileExplorerOpenSelectionFinderAlias,
-             .saveFilePreview,
+             .saveFilePreview, .filePreviewGoToLine,
              .browserBack, .browserForward,
              .browserReload, .browserHardReload,
              .browserZoomIn, .browserZoomOut, .browserZoomReset,

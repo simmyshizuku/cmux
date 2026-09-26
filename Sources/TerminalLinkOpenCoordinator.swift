@@ -1,4 +1,5 @@
 import AppKit
+import CmuxFilePreviewCore
 import CmuxTerminalCore
 import CmuxTestSupport
 import CmuxWorkspaces
@@ -74,11 +75,29 @@ struct TerminalLinkOpenCoordinator {
                     "link.openURL resolvedAsFileLocation=\(reference.path):\(line)" +
                     (reference.column.map { ":\($0)" } ?? "")
                 )
-                PreferredEditorService(defaults: defaults).open(
-                    URL(fileURLWithPath: reference.path),
-                    line: reference.line,
-                    column: reference.column
-                )
+                let openInEditor: @MainActor @Sendable () -> Void = { [defaults] in
+                    PreferredEditorService(defaults: defaults).open(
+                        URL(fileURLWithPath: reference.path),
+                        line: reference.line,
+                        column: reference.column
+                    )
+                }
+                if let location = FilePreviewTextLocation(line: line, column: reference.column),
+                   let sourcePanelId = request.sourcePanelId,
+                   let container,
+                   CommandClickFileOpenRouter.shouldRouteLocationInFilePreview(
+                       path: reference.path,
+                       defaults: defaults
+                   ),
+                   container.deferTerminalFileLinkOpen(
+                       sourcePanelId: sourcePanelId,
+                       filePath: reference.path,
+                       location: location,
+                       fallback: openInEditor
+                   ) {
+                    return true
+                }
+                openInEditor()
                 return true
             }
 
@@ -171,6 +190,7 @@ struct TerminalLinkOpenCoordinator {
         guard container.deferTerminalFileLinkOpen(
             sourcePanelId: sourcePanelId,
             filePath: fileURL.path,
+            location: nil,
             fallback: { [self] in _ = openExternally(fileURL, reason: "cmux file route fallback") }
         ) else {
             return openExternally(fileURL, reason: unavailableReason)
@@ -224,6 +244,7 @@ struct TerminalLinkOpenCoordinator {
             if currentContainer.deferTerminalFileLinkOpen(
                 sourcePanelId: sourcePanelId,
                 filePath: fileURL.path,
+                location: nil,
                 fallback: externalFallback
             ) {
                 return

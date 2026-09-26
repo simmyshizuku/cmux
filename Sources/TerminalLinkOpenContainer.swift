@@ -1,3 +1,4 @@
+import CmuxFilePreviewCore
 import Foundation
 
 /// Host operations needed to give terminal links identical behavior in the
@@ -15,6 +16,7 @@ protocol TerminalLinkOpenContainer: AnyObject {
     func deferTerminalFileLinkOpen(
         sourcePanelId: UUID,
         filePath: String,
+        location: FilePreviewTextLocation?,
         fallback: @escaping @MainActor @Sendable () -> Void
     ) -> Bool
 

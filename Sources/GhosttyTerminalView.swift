@@ -2,6 +2,7 @@ import Foundation
 import CmuxAppKitSupportUI
 import CmuxTerminal
 import CmuxFoundation
+import CmuxFilePreviewCore
 import CmuxPanes
 import CmuxTerminalCore
 import CmuxSettings
@@ -3697,17 +3698,28 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         let path: String
         let source: WordPathResolutionSource
         let rawToken: String
+        /// One-based source location from a `path:line[:column]` token.
+        var line: Int? = nil
+        var column: Int? = nil
+
+        var location: FilePreviewTextLocation? {
+            line.flatMap { FilePreviewTextLocation(line: $0, column: column) }
+        }
     }
 
     private func makeWordPathResolution(
         path: String,
         source: WordPathResolutionSource,
-        rawToken: String
+        rawToken: String,
+        line: Int? = nil,
+        column: Int? = nil
     ) -> WordPathResolution {
         WordPathResolution(
             path: path,
             source: source,
-            rawToken: rawToken
+            rawToken: rawToken,
+            line: line,
+            column: column
         )
     }
 
@@ -7774,7 +7786,11 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         cmuxDebugLog("link.wordFallback resolved=\(resolution.path) source=\(resolution.source.rawValue)")
         #endif
 
-        PreferredEditorService(defaults: .standard).open(URL(fileURLWithPath: resolution.path))
+        PreferredEditorService(defaults: .standard).open(
+            URL(fileURLWithPath: resolution.path),
+            line: resolution.line,
+            column: resolution.column
+        )
     }
 
     /// Check if the word under the mouse cursor resolves to an existing file/directory
@@ -8043,7 +8059,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         guard visibleRow >= 0, visibleRow < visibleLines.count else { return nil }
 
         let column = max(0, min(cols - 1, viewportOffsetStart % cols))
-        guard let resolution = TerminalPathResolver().resolveVisibleLinePath(
+        guard let resolution = TerminalPathResolver().resolveVisibleLineFileReference(
             visibleLines[visibleRow],
             column: column,
             cwd: cwd
@@ -8052,9 +8068,11 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         }
 
         return makeWordPathResolution(
-            path: resolution.path,
+            path: resolution.reference.path,
             source: .snapshot,
-            rawToken: resolution.rawToken
+            rawToken: resolution.rawToken,
+            line: resolution.reference.line,
+            column: resolution.reference.column
         )
     }
 
@@ -8094,7 +8112,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         guard visibleRow >= 0, visibleRow < visibleLines.count else { return nil }
 
         let column = max(0, min(cols - 1, Int((point.x - xInset) / resolvedCellWidth)))
-        guard let resolution = TerminalPathResolver().resolveVisibleLinePath(
+        guard let resolution = TerminalPathResolver().resolveVisibleLineFileReference(
             visibleLines[visibleRow],
             column: column,
             cwd: cwd
@@ -8103,9 +8121,11 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         }
 
         return makeWordPathResolution(
-            path: resolution.path,
+            path: resolution.reference.path,
             source: .snapshot,
-            rawToken: resolution.rawToken
+            rawToken: resolution.rawToken,
+            line: resolution.reference.line,
+            column: resolution.reference.column
         )
     }
 
@@ -8265,15 +8285,22 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
            workspace.canResolveTerminalPathsAgainstLocalFilesystem(
                surfaceID: termSurface.id
            ),
+           resolution.location == nil
+               || CommandClickFileOpenRouter.shouldRouteLocationInFilePreview(path: resolution.path),
            CommandClickFileOpenRouter.openInCmux(
                workspace: workspace,
                sourcePanelId: termSurface.id,
-               filePath: resolution.path
+               filePath: resolution.path,
+               location: resolution.location
            ) {
             return resolution
         }
 
-        PreferredEditorService(defaults: .standard).open(URL(fileURLWithPath: resolution.path))
+        PreferredEditorService(defaults: .standard).open(
+            URL(fileURLWithPath: resolution.path),
+            line: resolution.line,
+            column: resolution.column
+        )
         return resolution
     }
 

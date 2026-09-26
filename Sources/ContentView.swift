@@ -8222,6 +8222,7 @@ struct ContentView: View {
             )
         )
         Self.appendViewZoomCommandContributions(to: &contributions, panelSubtitle: panelSubtitle)
+        Self.appendFilePreviewGoToLineCommandContribution(to: &contributions, panelSubtitle: panelSubtitle)
         contributions.append(
             CommandPaletteCommandContribution(
                 commandId: "palette.markdownZoomIn",

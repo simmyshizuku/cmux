@@ -331,4 +331,49 @@ private func existsIn(_ existingPaths: Set<String>) -> @Sendable (String) -> Boo
             ) == nil
         )
     }
+
+    @Test func visibleCompilerLocationKeepsLineAndColumn() throws {
+        let existingFile = "/tmp/project/Sources/App.swift"
+        let line = "Sources/App.swift:240:9: error: sample"
+        let resolution = try #require(
+            TerminalPathResolver(fileExists: existsIn([existingFile])).resolveVisibleLineFileReference(
+                line,
+                column: 3,
+                cwd: "/tmp/project"
+            )
+        )
+        #expect(resolution.reference == TerminalFileReference(path: existingFile, line: 240, column: 9))
+    }
+
+    @Test func visibleLocationWithoutColumnKeepsLine() throws {
+        let existingFile = "/tmp/project/main.go"
+        let resolution = try #require(
+            TerminalPathResolver(fileExists: existsIn([existingFile])).resolveVisibleLineFileReference(
+                "--- FAIL at main.go:17",
+                column: 14,
+                cwd: "/tmp/project"
+            )
+        )
+        #expect(resolution.reference == TerminalFileReference(path: existingFile, line: 17))
+    }
+
+    @Test func visibleLiteralColonFileWinsOverLocation() throws {
+        let literal = "/tmp/project/report:42"
+        let resolution = try #require(
+            TerminalPathResolver(
+                fileExists: existsIn([literal, "/tmp/project/report"])
+            ).resolveVisibleLineFileReference("report:42", column: 2, cwd: "/tmp/project")
+        )
+        #expect(resolution.reference == TerminalFileReference(path: literal))
+    }
+
+    @Test func visibleLocationIgnoresURLSchemes() {
+        #expect(
+            TerminalPathResolver(fileExists: { _ in true }).resolveVisibleLineFileReference(
+                "see https://example.com:8080",
+                column: 8,
+                cwd: "/tmp"
+            )?.reference.line == nil
+        )
+    }
 }

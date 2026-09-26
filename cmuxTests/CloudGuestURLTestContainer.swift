@@ -1,3 +1,4 @@
+import CmuxFilePreviewCore
 import Foundation
 #if canImport(cmux_DEV)
 @testable import cmux_DEV
@@ -14,7 +15,7 @@ final class CloudGuestURLTestContainer: TerminalLinkOpenContainer {
     func terminalLinkWorkingDirectory(for sourcePanelId: UUID) -> String? { nil }
     func terminalLinkIsRemoteTerminal(_ sourcePanelId: UUID) -> Bool { true }
     func cloudTerminalLinkTarget(url: URL, sourcePanelId: UUID) -> CloudTerminalLinkTarget? { nil }
-    func deferTerminalFileLinkOpen(sourcePanelId: UUID, filePath: String, fallback: @escaping @MainActor @Sendable () -> Void) -> Bool { false }
+    func deferTerminalFileLinkOpen(sourcePanelId: UUID, filePath: String, location: FilePreviewTextLocation?, fallback: @escaping @MainActor @Sendable () -> Void) -> Bool { false }
     func openTerminalBrowserLink(url: URL, sourcePanelId: UUID, focus: Bool) -> Bool {
         self.focus = focus
         opened.append(url)

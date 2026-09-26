@@ -103,6 +103,24 @@ extension ContentView {
         )
     }
 
+    static let commandPaletteFilePreviewGoToLineCommandId = "palette.filePreviewGoToLine"
+
+    static func appendFilePreviewGoToLineCommandContribution(
+        to contributions: inout [CommandPaletteCommandContribution],
+        panelSubtitle: @escaping (CommandPaletteContextSnapshot) -> String
+    ) {
+        let title = KeyboardShortcutSettings.Action.filePreviewGoToLine.label
+        contributions.append(
+            CommandPaletteCommandContribution(
+                commandId: commandPaletteFilePreviewGoToLineCommandId,
+                title: { _ in title },
+                subtitle: panelSubtitle,
+                keywords: ["go to line", "goto", "jump", "line", "column", "file", "preview", "editor"],
+                when: { $0.bool(CommandPaletteContextKeys.panelIsFilePreviewTextEditor) }
+            )
+        )
+    }
+
     func registerViewCommandHandlers(_ registry: inout CommandPaletteHandlerRegistry) {
         registry.register(commandId: "palette.triggerFlash") {
             tabManager.triggerFocusFlash()
@@ -117,6 +135,18 @@ extension ContentView {
         }
         registry.register(commandId: "palette.sleepyMode") {
             SleepyModeController.shared.activate()
+        }
+        registry.register(commandId: Self.commandPaletteFilePreviewGoToLineCommandId) {
+            guard let preview = tabManager.focusedTextFilePreviewPanel else {
+                NSSound.beep()
+                return
+            }
+            // Let the palette dismiss and hand focus back before anchoring the popover.
+            DispatchQueue.main.async {
+                if !preview.presentGoToLine() {
+                    NSSound.beep()
+                }
+            }
         }
         for action in KeyboardShortcutSettings.Action.globalFontMagnificationActions {
             registry.register(commandId: action.globalFontMagnificationCommandId) {

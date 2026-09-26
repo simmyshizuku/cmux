@@ -1936,6 +1936,7 @@
 		C01E00010000000000000001 /* FilePreviewEditorSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01E00010000000000000002 /* FilePreviewEditorSettings.swift */; };
 		C0DE8652000000000000000F /* FilePreviewFileState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE86520000000000000010 /* FilePreviewFileState.swift */; };
 		A5001432A5001432A5001432 /* FilePreviewFocusCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001431A5001431A5001431 /* FilePreviewFocusCoordinator.swift */; };
+		4E79F6486A786ADB5EE5E463 /* FilePreviewGoToLineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4B23D7D834760D0E62722B /* FilePreviewGoToLineTests.swift */; };
 		C0DE86520000000000000101 /* FilePreviewImageLoadResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE86520000000000000102 /* FilePreviewImageLoadResult.swift */; };
 		01EE5DC99896BA30240EF1B5 /* FilePreviewImageSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1450569A797AA7937677D9 /* FilePreviewImageSession.swift */; };
 		C0DE86520000000000000009 /* FilePreviewImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE8652000000000000000A /* FilePreviewImageView.swift */; };
@@ -1984,6 +1985,8 @@
 		C0DE97470000000000000001 /* FilePreviewTabMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE97470000000000000002 /* FilePreviewTabMetadata.swift */; };
 		C0DE97470000000000000003 /* FilePreviewTabMetadataHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE97470000000000000004 /* FilePreviewTabMetadataHost.swift */; };
 		D0B10016A1B2C3D4E5F60001 /* FilePreviewTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0B10017A1B2C3D4E5F60001 /* FilePreviewTextEditor.swift */; };
+		F11E00000000000000000301 /* SavingTextView+FilePreviewLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11E00000000000000000300 /* SavingTextView+FilePreviewLocation.swift */; };
+		F11E00000000000000000303 /* FilePreviewGoToLineViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11E00000000000000000302 /* FilePreviewGoToLineViewController.swift */; };
 		C0DEFC100000000000000001 /* FilePreviewTextEditorTextKitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DEFC100000000000000002 /* FilePreviewTextEditorTextKitTests.swift */; };
 		C0DE86520000000000000113 /* FilePreviewViewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE86520000000000000114 /* FilePreviewViewport.swift */; };
 		F11E52270000000000005227 /* FilePreviewWordWrapSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11E52270000000000005228 /* FilePreviewWordWrapSettings.swift */; };
@@ -2092,6 +2095,7 @@
 		46814000000000000000000B /* GhosttyTitleUpdateSurfaceState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46814000000000000000000C /* GhosttyTitleUpdateSurfaceState.swift */; };
 		FE001107 /* GitFileStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE001007 /* GitFileStatus.swift */; };
 		FE001106 /* GitStatusProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE001006 /* GitStatusProvider.swift */; };
+		F11E00000000000000000201 /* GlobalFontMagnificationShortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11E00000000000000000200 /* GlobalFontMagnificationShortcut.swift */; };
 		3865A0023865A0023865A002 /* GlobalSearchCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3865B0023865B0023865B002 /* GlobalSearchCoordinator.swift */; };
 		3865A0073865A0073865A007 /* GlobalSearchDocuments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3865B0073865B0073865B007 /* GlobalSearchDocuments.swift */; };
 		8561A0018561A0018561A001 /* GlobalSearchInputOwnershipTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8561B0018561B0018561B001 /* GlobalSearchInputOwnershipTests.swift */; };
@@ -2103,7 +2107,6 @@
 		3865A0053865A0053865A005 /* GlobalSearchShortcutSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3865B0053865B0053865B005 /* GlobalSearchShortcutSettingsTests.swift */; };
 		8561A0038561A0038561A003 /* GlobalSearchVisiblePopoverShortcutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8561B0038561B0038561B003 /* GlobalSearchVisiblePopoverShortcutTests.swift */; };
 		F11E00000000000000000101 /* GoToFileIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11E00000000000000000100 /* GoToFileIndex.swift */; };
-		F11E00000000000000000201 /* GlobalFontMagnificationShortcut.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11E00000000000000000200 /* GlobalFontMagnificationShortcut.swift */; };
 		CC000000A1B2C3D4E5F60718 /* GotoSplitCycleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC000001A1B2C3D4E5F60718 /* GotoSplitCycleUITests.swift */; };
 		CC2639000000000000000001 /* GotoSplitCycleUITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2639000000000000000002 /* GotoSplitCycleUITestSupport.swift */; };
 		5B11E5A100000000000000B1 /* GPUSpinner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B11E5A100000000000000B2 /* GPUSpinner.swift */; };
@@ -6069,6 +6072,7 @@
 		C01E00010000000000000002 /* FilePreviewEditorSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewEditorSettings.swift; sourceTree = "<group>"; };
 		C0DE86520000000000000010 /* FilePreviewFileState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewFileState.swift; sourceTree = "<group>"; };
 		A5001431A5001431A5001431 /* FilePreviewFocusCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewFocusCoordinator.swift; sourceTree = "<group>"; };
+		0A4B23D7D834760D0E62722B /* FilePreviewGoToLineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilePreviewGoToLineTests.swift"; sourceTree = "<group>"; };
 		C0DE86520000000000000102 /* FilePreviewImageLoadResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewImageLoadResult.swift; sourceTree = "<group>"; };
 		7D1450569A797AA7937677D9 /* FilePreviewImageSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewImageSession.swift; sourceTree = "<group>"; };
 		C0DE8652000000000000000A /* FilePreviewImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewImageView.swift; sourceTree = "<group>"; };
@@ -6117,6 +6121,8 @@
 		C0DE97470000000000000002 /* FilePreviewTabMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewTabMetadata.swift; sourceTree = "<group>"; };
 		C0DE97470000000000000004 /* FilePreviewTabMetadataHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewTabMetadataHost.swift; sourceTree = "<group>"; };
 		D0B10017A1B2C3D4E5F60001 /* FilePreviewTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewTextEditor.swift; sourceTree = "<group>"; };
+		F11E00000000000000000300 /* SavingTextView+FilePreviewLocation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Panels/SavingTextView+FilePreviewLocation.swift"; sourceTree = "<group>"; };
+		F11E00000000000000000302 /* FilePreviewGoToLineViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewGoToLineViewController.swift; sourceTree = "<group>"; };
 		C0DEFC100000000000000002 /* FilePreviewTextEditorTextKitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePreviewTextEditorTextKitTests.swift; sourceTree = "<group>"; };
 		C0DE86520000000000000114 /* FilePreviewViewport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewViewport.swift; sourceTree = "<group>"; };
 		F11E52270000000000005228 /* FilePreviewWordWrapSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewWordWrapSettings.swift; sourceTree = "<group>"; };
@@ -6225,6 +6231,7 @@
 		46814000000000000000000C /* GhosttyTitleUpdateSurfaceState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttyTitleUpdateSurfaceState.swift; sourceTree = "<group>"; };
 		FE001007 /* GitFileStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitFileStatus.swift; sourceTree = "<group>"; };
 		FE001006 /* GitStatusProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitStatusProvider.swift; sourceTree = "<group>"; };
+		F11E00000000000000000200 /* GlobalFontMagnificationShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalFontMagnificationShortcut.swift; sourceTree = "<group>"; };
 		3865B0023865B0023865B002 /* GlobalSearchCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Search/GlobalSearchCoordinator.swift; sourceTree = "<group>"; };
 		3865B0073865B0073865B007 /* GlobalSearchDocuments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Search/GlobalSearchDocuments.swift; sourceTree = "<group>"; };
 		8561B0018561B0018561B001 /* GlobalSearchInputOwnershipTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalSearchInputOwnershipTests.swift; sourceTree = "<group>"; };
@@ -6236,7 +6243,6 @@
 		3865B0053865B0053865B005 /* GlobalSearchShortcutSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalSearchShortcutSettingsTests.swift; sourceTree = "<group>"; };
 		8561B0038561B0038561B003 /* GlobalSearchVisiblePopoverShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalSearchVisiblePopoverShortcutTests.swift; sourceTree = "<group>"; };
 		F11E00000000000000000100 /* GoToFileIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoToFileIndex.swift; sourceTree = "<group>"; };
-		F11E00000000000000000200 /* GlobalFontMagnificationShortcut.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalFontMagnificationShortcut.swift; sourceTree = "<group>"; };
 		CC000001A1B2C3D4E5F60718 /* GotoSplitCycleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GotoSplitCycleUITests.swift; sourceTree = "<group>"; };
 		CC2639000000000000000002 /* GotoSplitCycleUITestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Debug/UITests/GotoSplitCycleUITestSupport.swift; sourceTree = "<group>"; };
 		5B11E5A100000000000000B2 /* GPUSpinner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sidebar/GPUSpinner.swift; sourceTree = "<group>"; };
@@ -10758,6 +10764,8 @@
 				C0DE64020000000000001001 /* FilePreviewQuickLookContainerView.swift */,
 				0A02623202562490B3E88372 /* FilePreviewQuickLookSession.swift */,
 				D0B10017A1B2C3D4E5F60001 /* FilePreviewTextEditor.swift */,
+				F11E00000000000000000300 /* SavingTextView+FilePreviewLocation.swift */,
+				F11E00000000000000000302 /* FilePreviewGoToLineViewController.swift */,
 				C01E00080000000000000002 /* NSTextView+FilePreviewTabWidth.swift */,
 				A5001451A5001451A5001451 /* FilePreviewNativeBackground.swift */,
 				A5001442A5001442A5001442 /* FilePreviewModeSupport.swift */,
@@ -12477,6 +12485,7 @@
 				AC9CBF6AD1163240A7A1E161 /* CloudDesktopOpenFixture.swift */,
 				C09C35915CA32C6A8B13F0A0 /* CloudDesktopOpenTestProvider.swift */,
 				8C6F4D7DD1792A39D8DB3BDD /* CommandPaletteFloatingPanelTests.swift */,
+				0A4B23D7D834760D0E62722B /* FilePreviewGoToLineTests.swift */,
 			);
 			path = cmuxTests;
 			sourceTree = "<group>";
@@ -14335,6 +14344,8 @@
 				C0DE97470000000000000001 /* FilePreviewTabMetadata.swift in Sources */,
 				C0DE97470000000000000003 /* FilePreviewTabMetadataHost.swift in Sources */,
 				D0B10016A1B2C3D4E5F60001 /* FilePreviewTextEditor.swift in Sources */,
+				F11E00000000000000000301 /* SavingTextView+FilePreviewLocation.swift in Sources */,
+				F11E00000000000000000303 /* FilePreviewGoToLineViewController.swift in Sources */,
 				C0DE86520000000000000113 /* FilePreviewViewport.swift in Sources */,
 					F11E52270000000000005227 /* FilePreviewWordWrapSettings.swift in Sources */,
 				A5001445A5001445A5001445 /* FilePreviewWorkspaceOpenSupport.swift in Sources */,
@@ -16678,6 +16689,7 @@
 				FE002102 /* FileExplorerStoreTests.swift in Sources */,
 				828800010000000000000002 /* FileExplorerStyleContrastTests.swift in Sources */,
 				C01E00070000000000000001 /* FilePreviewCodeViewTests.swift in Sources */,
+				4E79F6486A786ADB5EE5E463 /* FilePreviewGoToLineTests.swift in Sources */,
 				C0DE49950000000000000001 /* FilePreviewKindResolverTests.swift in Sources */,
 				C0DE86520000000000000117 /* FilePreviewNativeRefreshStateTests.swift in Sources */,
 				10200F1E000000000000000D /* FilePreviewObserverReloadTests.swift in Sources */,

@@ -185,6 +185,12 @@ Global Font Magnification (Settings > App, `app.globalFontMagnification`) scales
 }
 ```
 
+## File Preview Go to Line
+
+Ctrl+G in a focused File Preview text editor opens a Go to Line field. Type a line number, or `line:column`, and press Return to move the caret there and center that line; Escape closes the field. The same action is in the command palette as Go to Line while a text preview is focused. Rebind it with `shortcuts.bindings.filePreviewGoToLine`.
+
+Cmd-clicking a `path:line` or `path:line:column` link in a terminal, the form compilers and test runners print, opens the file in File Preview at that location when `app.openSupportedFilesInCmux` is on. Markdown and HTML files, and every file when that setting is off, still open in the preferred editor at the same location.
+
 ## New Cloud Workspace shortcut and the plus-button menu
 
 Cmd+Shift+Y creates a workspace on the machine that owns the most recently selected Cloud workspace. If no valid Cloud workspace is remembered, it uses the first machine in the current right-hand Cloud sidebar order, including pins and manual reordering. Cmd+Y opens the New Machine flow to provision a machine deliberately. Rebind or unbind these shortcuts from Settings > Keyboard Shortcuts or with `shortcuts.bindings.newCloudWorkspace` and `shortcuts.bindings.newCloudMachine`. Both are inert unless Cloud Machines is enabled and the account is signed in.

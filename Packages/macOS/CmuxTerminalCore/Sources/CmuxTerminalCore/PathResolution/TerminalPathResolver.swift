@@ -90,6 +90,54 @@ public struct TerminalPathResolver: Sendable {
         return nil
     }
 
+    /// Resolves the path token under a column of a visible terminal line,
+    /// keeping a trailing `:line` or `:line:column` location.
+    ///
+    /// Each candidate token is probed as a literal path first, exactly as
+    /// ``resolveVisibleLinePath(_:column:cwd:)`` does, so a real file named
+    /// `report:42` still wins. Only when the literal spelling is missing is a
+    /// location suffix split off, which is what makes compiler output such as
+    /// `Sources/App.swift:12:5: error:` openable at its line.
+    ///
+    /// - Parameters:
+    ///   - line: The visible line text.
+    ///   - column: The zero-based column under the cursor.
+    ///   - cwd: The surface's working directory.
+    /// - Returns: The raw token plus the resolved reference, or `nil`.
+    public func resolveVisibleLineFileReference(
+        _ line: String,
+        column: Int,
+        cwd: String
+    ) -> (rawToken: String, reference: TerminalFileReference)? {
+        for rawToken in line.pathTokenCandidates(containingColumn: column) {
+            if let resolvedPath = resolveQuicklookPath(rawToken, cwd: cwd) {
+                return (rawToken, TerminalFileReference(path: resolvedPath))
+            }
+            if let reference = resolveLocatedPath(rawToken, cwd: cwd) {
+                return (rawToken, reference)
+            }
+        }
+        return nil
+    }
+
+    /// Resolves a schemeless `path:line[:column]` token whose literal
+    /// spelling has already been ruled out.
+    private func resolveLocatedPath(_ rawToken: String, cwd: String) -> TerminalFileReference? {
+        for token in rawToken.pathResolutionCandidates() {
+            guard let location = parseLocationSuffix(in: token),
+                  URL(string: location.path)?.scheme == nil,
+                  let resolvedPath = resolveQuicklookPath(location.path, cwd: cwd) else {
+                continue
+            }
+            return TerminalFileReference(
+                path: resolvedPath,
+                line: location.line,
+                column: location.column
+            )
+        }
+        return nil
+    }
+
     /// Resolves an open-URL request payload to an existing local file.
     ///
     /// The resolver tries the literal file spelling before interpreting a

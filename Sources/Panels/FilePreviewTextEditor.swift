@@ -15,10 +15,14 @@ protocol FilePreviewTextEditingPanel: AnyObject {
     func updateTextContent(_ nextContent: String)
     @discardableResult
     func saveTextContent() -> Task<Void, Never>?
+    /// Called after the editor has shown `textContentRevision`, so a location
+    /// requested before the text loaded can be revealed.
+    func textEditorDidShowContent(revision: Int)
 }
 
 extension FilePreviewTextEditingPanel {
     var textContentRevision: Int { 0 }
+    func textEditorDidShowContent(revision _: Int) {}
 }
 
 struct FilePreviewTextEditor<PanelModel>: NSViewRepresentable where PanelModel: ObservableObject & FilePreviewTextEditingPanel {
@@ -97,6 +101,7 @@ struct FilePreviewTextEditor<PanelModel>: NSViewRepresentable where PanelModel: 
                 defaultColor: themeForegroundColor,
                 force: true
             )
+            panel.textEditorDidShowContent(revision: panel.textContentRevision)
         }
         return scrollView
     }
@@ -167,6 +172,9 @@ struct FilePreviewTextEditor<PanelModel>: NSViewRepresentable where PanelModel: 
             context.coordinator.cancelHighlight()
         }
         Self.refreshChrome(on: scrollView, textView: textView)
+        if isVisibleInUI, let revision = context.coordinator.lastAppliedContentRevision {
+            panel.textEditorDidShowContent(revision: revision)
+        }
     }
 
     static func applyTheme(
@@ -480,6 +488,7 @@ final class SavingTextView: NSTextView {
     var appliedFilePreviewTabStopInterval: CGFloat?
     private var previewFontSize: CGFloat = 13
     private var pendingEditorShortcutChordPrefix: ShortcutStroke?
+    private var lastKeyEquivalentProbeTimestamp: TimeInterval?
     private var fontMagnificationObserver: GlobalFontMagnificationChangeObserver?
 
     convenience init() {
@@ -523,10 +532,24 @@ final class SavingTextView: NSTextView {
         guard event.type == .keyDown else {
             return super.performKeyEquivalent(with: event)
         }
+        lastKeyEquivalentProbeTimestamp = event.timestamp
         if handleEditorShortcut(event) {
             return true
         }
         return super.performKeyEquivalent(with: event)
+    }
+
+    override func keyDown(with event: NSEvent) {
+        // AppKit does not always offer Control- or Option-only chords (such as
+        // the default Go to Line, Ctrl+G) to `performKeyEquivalent`. Give
+        // modified keys that skipped it one pass here; plain typing never
+        // reaches the shortcut table.
+        if event.timestamp != lastKeyEquivalentProbeTimestamp,
+           !event.modifierFlags.intersection([.control, .option, .command]).isEmpty,
+           handleEditorShortcut(event) {
+            return
+        }
+        super.keyDown(with: event)
     }
 
     override func magnify(with event: NSEvent) {
@@ -643,6 +666,12 @@ final class SavingTextView: NSTextView {
         let saveShortcut = KeyboardShortcutSettings.shortcut(for: .saveFilePreview)
         if !saveShortcut.isUnbound {
             candidates.append((saveShortcut, { _ in true }, { [weak self] in self?.panel?.saveTextContent() }))
+        }
+        let goToLineShortcut = KeyboardShortcutSettings.shortcut(for: .filePreviewGoToLine)
+        if !goToLineShortcut.isUnbound {
+            candidates.append((goToLineShortcut, { _ in true }, { [weak self] in
+                _ = self?.presentFilePreviewGoToLine()
+            }))
         }
         for action in Self.previewFontZoomShortcutActions {
             let shortcut = KeyboardShortcutSettings.shortcut(for: action)

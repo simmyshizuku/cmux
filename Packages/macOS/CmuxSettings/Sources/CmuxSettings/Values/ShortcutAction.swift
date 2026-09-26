@@ -173,6 +173,8 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     // MARK: Browser & Find
     case openDiffViewer
     case saveFilePreview
+    /// Opens the Go to Line field in a focused File Preview text editor.
+    case filePreviewGoToLine
     case openBrowser
     case focusBrowserAddressBar
     case browserBack
