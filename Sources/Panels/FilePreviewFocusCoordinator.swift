@@ -35,6 +35,15 @@ final class FilePreviewFocusCoordinator {
             pendingIntent = intent
             return false
         }
+        // Keep focus on a control already inside this region (such as the
+        // text editor's find bar) instead of pulling it back to the primary
+        // responder when the panel is re-focused by a click.
+        if let window = endpoint.window,
+           let responder = window.firstResponder,
+           ownedIntent(for: responder, in: window) == intent {
+            pendingIntent = nil
+            return true
+        }
         guard let window = endpoint.window,
               window.makeFirstResponder(endpoint) else {
             pendingIntent = intent

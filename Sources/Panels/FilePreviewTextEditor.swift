@@ -74,9 +74,9 @@ struct FilePreviewTextEditor<PanelModel>: NSViewRepresentable where PanelModel: 
         textView.string = panel.textContent
         context.coordinator.lastAppliedContentRevision = panel.textContentRevision
         context.coordinator.isHighlightingVisible = isVisibleInUI
-        panel.attachTextView(textView)
 
         scrollView.documentView = textView
+        panel.attachTextView(textView)
         textView.applyFilePreviewWordWrap(wordWrap, scrollView: scrollView)
         Self.installChrome(on: scrollView, textView: textView)
         Self.applyTheme(
@@ -413,7 +413,8 @@ extension SavingTextView {
         textView.allowsUndo = true
         textView.isRichText = false
         textView.importsGraphics = false
-        textView.usesFindPanel = true
+        textView.usesFindBar = true
+        textView.isIncrementalSearchingEnabled = true
         textView.usesFontPanel = false
         textView.applyCurrentPreviewFont()
         textView.minSize = NSSize(width: 0, height: 0)
@@ -724,7 +725,13 @@ final class SavingTextView: NSTextView {
 extension FilePreviewPanel {
     func attachTextView(_ textView: NSTextView) {
         self.textView = textView
-        focusCoordinator.register(root: textView, primaryResponder: textView, intent: .textEditor)
+        // Root at the scroll view so the find bar's fields, which sit beside
+        // the text view, still count as focus inside this panel.
+        focusCoordinator.register(
+            root: textView.enclosingScrollView ?? textView,
+            primaryResponder: textView,
+            intent: .textEditor
+        )
     }
 
     @discardableResult

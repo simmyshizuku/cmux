@@ -905,11 +905,15 @@ class TabManager: ObservableObject {
     var isFindVisible: Bool {
         selectedTerminalPanel?.searchState != nil ||
             focusedBrowserPanel?.searchState != nil ||
-            focusedMarkdownPanel?.searchState != nil
+            focusedMarkdownPanel?.searchState != nil ||
+            focusedTextFilePreviewPanel?.isTextFinderVisible == true
     }
 
     var canUseSelectionForFind: Bool {
-        selectedTerminalPanel?.hasSelection() == true
+        if let panel = selectedTerminalPanel {
+            return panel.hasSelection()
+        }
+        return focusedTextFilePreviewPanel?.textView?.selectedRange().length ?? 0 > 0
     }
 
     @discardableResult
@@ -941,13 +945,19 @@ class TabManager: ObservableObject {
             // hidden but the shortcut was handled.
             return browserPanel.searchState != nil || browserPanel.isDiffViewerFindOwner
         }
+        if let filePreviewPanel = focusedTextFilePreviewPanel {
+            return filePreviewPanel.performTextFinderAction(.showFindInterface)
+        }
         guard let markdownPanel = focusedMarkdownPanel else { return false }
         markdownPanel.startFind()
         return markdownPanel.searchState != nil
     }
 
     func searchSelection() {
-        guard let panel = selectedTerminalPanel else { return }
+        guard let panel = selectedTerminalPanel else {
+            focusedTextFilePreviewPanel?.performTextFinderAction(.setSearchString)
+            return
+        }
         if panel.searchState == nil {
             panel.searchState = TerminalSurface.SearchState()
         }
@@ -971,6 +981,10 @@ class TabManager: ObservableObject {
             browserPanel.findNext()
             return
         }
+        if let filePreviewPanel = focusedTextFilePreviewPanel {
+            filePreviewPanel.performTextFinderAction(.nextMatch)
+            return
+        }
         focusedMarkdownPanel?.findNext()
     }
 
@@ -982,6 +996,10 @@ class TabManager: ObservableObject {
 
         if let browserPanel = focusedBrowserPanel {
             browserPanel.findPrevious()
+            return
+        }
+        if let filePreviewPanel = focusedTextFilePreviewPanel {
+            filePreviewPanel.performTextFinderAction(.previousMatch)
             return
         }
         focusedMarkdownPanel?.findPrevious()
@@ -1085,6 +1103,10 @@ class TabManager: ObservableObject {
 
         if let browserPanel = focusedBrowserPanel {
             browserPanel.hideFind()
+            return
+        }
+        if let filePreviewPanel = focusedTextFilePreviewPanel {
+            filePreviewPanel.performTextFinderAction(.hideFindInterface)
             return
         }
         focusedMarkdownPanel?.hideFind()
