@@ -68,7 +68,7 @@ export const shortcutCategories: ShortcutCategory[] = [
         id: "globalSearch",
         combos: [["⌥", "⌘", "F"]],
         description: { en: "Global search", ja: "グローバル検索" },
-        note: { en: "when cmux is active", ja: "cmuxがアクティブな場合" },
+        note: { en: "when cmux is active, outside a focused text preview", ja: "cmuxがアクティブな場合（フォーカス中のテキストプレビューを除く）" },
       },
       { id: "commandPalette", combos: [["⌘", "⇧", "P"]], description: { en: "Command palette", ja: "コマンドパレット" } },
       {
@@ -391,6 +391,12 @@ export const shortcutCategories: ShortcutCategory[] = [
         combos: [["⌃", "G"]],
         description: { en: "Go to line in file preview (line or line:column)", ja: "ファイルプレビューで行へ移動（行 または 行:列）" },
         note: { en: "focused text preview", ja: "フォーカス中のテキストプレビュー" },
+      },
+      {
+        id: "filePreviewFindAndReplace",
+        combos: [["⌥", "⌘", "F"]],
+        description: { en: "Find and replace in file preview", ja: "ファイルプレビューで検索と置換" },
+        note: { en: "focused text preview; Global search elsewhere", ja: "フォーカス中のテキストプレビュー。それ以外ではグローバル検索" },
       },
     ],
   },

@@ -19,6 +19,8 @@ extension ContentView {
         switch commandId {
         case ContentView.commandPaletteFilePreviewGoToLineCommandId:
             return .filePreviewGoToLine
+        case ContentView.commandPaletteFilePreviewFindAndReplaceCommandId:
+            return .filePreviewFindAndReplace
         case "palette.newWorkspace":
             return .newTab
         case "palette.newBrowserWorkspace":

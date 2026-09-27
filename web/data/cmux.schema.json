@@ -1877,6 +1877,7 @@
               "fileExplorerOpenSelectionFinderAlias",
               "saveFilePreview",
               "filePreviewGoToLine",
+              "filePreviewFindAndReplace",
               "openBrowser",
               "focusBrowserAddressBar",
               "browserBack",

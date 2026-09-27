@@ -202,6 +202,7 @@ enum KeyboardShortcutSettings {
         // Panels
         case saveFilePreview
         case filePreviewGoToLine
+        case filePreviewFindAndReplace
         case openBrowser
         case focusBrowserAddressBar
         case browserBack
@@ -379,6 +380,7 @@ enum KeyboardShortcutSettings {
             case .fileExplorerOpenSelectionFinderAlias: return String(localized: "shortcut.fileExplorerOpenSelectionFinderAlias.label", defaultValue: "File Explorer: Open Selection (Finder Alias)")
             case .saveFilePreview: return String(localized: "shortcut.saveFilePreview.label", defaultValue: "Save File Preview")
             case .filePreviewGoToLine: return String(localized: "shortcut.filePreviewGoToLine.label", defaultValue: "Go to Line")
+            case .filePreviewFindAndReplace: return String(localized: "shortcut.filePreviewFindAndReplace.label", defaultValue: "Find and Replace")
             case .openBrowser: return String(localized: "shortcut.openBrowser.label", defaultValue: "Open Browser")
             case .focusBrowserAddressBar: return String(localized: "command.browserFocusAddressBar.title", defaultValue: "Focus Address Bar")
             case .browserBack: return String(localized: "menu.view.back", defaultValue: "Back")
@@ -669,6 +671,8 @@ enum KeyboardShortcutSettings {
                 return StoredShortcut(key: "s", command: true, shift: false, option: false, control: false)
             case .filePreviewGoToLine:
                 return StoredShortcut(key: "g", command: false, shift: false, option: false, control: true)
+            case .filePreviewFindAndReplace:
+                return StoredShortcut(key: "f", command: true, shift: false, option: true, control: false)
             case .openBrowser:
                 return StoredShortcut(key: "l", command: true, shift: true, option: false, control: false)
             case .focusBrowserAddressBar:

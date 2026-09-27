@@ -88,7 +88,9 @@ final class FilePreviewFindController {
         applyBarHeight()
         scrollView.isFindBarVisible = true
         recompile(revealFromSelection: true)
-        let field = replace == true ? barView.replaceField : barView.queryField
+        // Like VS Code: Find and Replace starts in the replace field only when
+        // there is already something to find.
+        let field = replace == true && !query.isEmpty ? barView.replaceField : barView.queryField
         if textView.window?.makeFirstResponder(field) == true {
             field.currentEditor()?.selectAll(nil)
         }

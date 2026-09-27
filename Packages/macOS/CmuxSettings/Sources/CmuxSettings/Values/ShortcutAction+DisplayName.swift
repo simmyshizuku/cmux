@@ -192,6 +192,8 @@ extension ShortcutAction {
         case .saveFilePreview: return "Save File Preview"
         case .filePreviewGoToLine:
             return String(localized: "shortcut.filePreviewGoToLine.label", defaultValue: "Go to Line")
+        case .filePreviewFindAndReplace:
+            return String(localized: "shortcut.filePreviewFindAndReplace.label", defaultValue: "Find and Replace")
         case .openBrowser: return "Open Browser"
         case .focusBrowserAddressBar: return "Focus Address Bar"
         case .browserBack: return "Back"

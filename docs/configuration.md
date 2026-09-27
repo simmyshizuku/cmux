@@ -191,7 +191,7 @@ Ctrl+G in a focused File Preview text editor opens a Go to Line field. Type a li
 
 ## File Preview find and replace
 
-Find (Cmd+F) in a focused File Preview text editor opens a find bar above the text. Return and Shift+Return move to the next and previous match (Find Next and Find Previous work too), and Escape closes the bar and selects the current match. The `Aa`, `ab`, and `.*` toggles turn on match case, whole word, and regular expressions (Option+Cmd+C, W, and R while the bar is open). The chevron opens a replace row: Return replaces the current match, and Replace All (Option+Cmd+Return) replaces every match as one undoable edit. With regular expressions on, the replacement accepts `$1`, `$&`, `\n`, and `\t`.
+Find (Cmd+F) in a focused File Preview text editor opens a find bar above the text. Return and Shift+Return move to the next and previous match (Find Next and Find Previous work too), and Escape closes the bar and selects the current match. The `Aa`, `ab`, and `.*` toggles turn on match case, whole word, and regular expressions (Option+Cmd+C, W, and R while the bar is open). The chevron, or Find and Replace (Option+Cmd+F, rebind with `shortcuts.bindings.filePreviewFindAndReplace`), opens a replace row; while a text preview has focus, Option+Cmd+F opens Find and Replace instead of Global Search. Return replaces the current match, and Replace All (Option+Cmd+Return) replaces every match as one undoable edit. With regular expressions on, the replacement accepts `$1`, `$&`, `\n`, and `\t`.
 
 Find in Directory (Cmd+Shift+F) has the same three toggles in its search field.
 

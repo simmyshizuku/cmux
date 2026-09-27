@@ -684,6 +684,17 @@ final class SavingTextView: NSTextView {
                 _ = self?.presentFilePreviewGoToLine()
             }))
         }
+        let findAndReplaceShortcut = KeyboardShortcutSettings.shortcut(for: .filePreviewFindAndReplace)
+        if !findAndReplaceShortcut.isUnbound {
+            candidates.append((
+                findAndReplaceShortcut,
+                { [weak self] event in
+                    guard let self, self.ownsFirstResponderIncludingFindBar else { return false }
+                    return self.previewFontZoomShortcutWhenClauseAllows(action: .filePreviewFindAndReplace, event: event)
+                },
+                { [weak self] in _ = self?.findController?.show(replace: true) }
+            ))
+        }
         for action in Self.previewFontZoomShortcutActions {
             let shortcut = KeyboardShortcutSettings.shortcut(for: action)
             guard !shortcut.isUnbound else { continue }
@@ -696,6 +707,15 @@ final class SavingTextView: NSTextView {
             ))
         }
         return candidates
+    }
+
+    /// Whether focus is in this editor's text or its find bar (not another
+    /// editor in the same window, which also receives key equivalents).
+    private var ownsFirstResponderIncludingFindBar: Bool {
+        guard let responder = window?.firstResponder else { return false }
+        if responder === self { return true }
+        guard let view = responder as? NSView, let scrollView = enclosingScrollView else { return false }
+        return view.isDescendant(of: scrollView)
     }
 
     private func previewFontZoomShortcutWhenClauseAllows(

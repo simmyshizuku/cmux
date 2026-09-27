@@ -175,6 +175,40 @@ struct KeyboardShortcutContextSwiftTests {
         #expect(!markdown.overlaps(viewZoom))
     }
 
+    @Test("Find and Replace shares ⌥⌘F with Global Search by editor focus")
+    func findAndReplaceSharesOptionCommandFWithGlobalSearch() {
+        let findAndReplace = KeyboardShortcutSettings.Action.filePreviewFindAndReplace
+        let globalSearch = KeyboardShortcutSettings.Action.globalSearch
+
+        #expect(findAndReplace.defaultShortcut == globalSearch.defaultShortcut)
+        #expect(findAndReplace.shortcutContext == .filePreviewTextEditor)
+        #expect(globalSearch.shortcutContext == .outsideFilePreviewTextEditor)
+
+        for editorFocused in [true, false] {
+            let findAndReplaceActive = findAndReplace.shortcutContext.isAvailable(
+                focusedBrowserPanel: false,
+                focusedMarkdownPanel: false,
+                focusedFilePreviewTextEditor: editorFocused,
+                rightSidebarFocused: false
+            )
+            let globalSearchActive = globalSearch.shortcutContext.isAvailable(
+                focusedBrowserPanel: false,
+                focusedMarkdownPanel: false,
+                focusedFilePreviewTextEditor: editorFocused,
+                rightSidebarFocused: false
+            )
+            #expect(findAndReplaceActive == editorFocused)
+            #expect(globalSearchActive != editorFocused)
+        }
+
+        #expect(!findAndReplace.shortcutContext.overlaps(globalSearch.shortcutContext))
+        #expect(!globalSearch.conflicts(
+            with: findAndReplace.defaultShortcut,
+            proposedAction: findAndReplace,
+            configuredShortcut: globalSearch.defaultShortcut
+        ))
+    }
+
     @Test("browser or file preview text editor context availability and overlap")
     func browserOrFilePreviewTextEditorContextAvailabilityAndOverlap() {
         let context = KeyboardShortcutSettings.Action.browserZoomIn.shortcutContext

@@ -50,6 +50,11 @@ extension KeyboardShortcutSettings.Action {
         case browserPanel
         case viewerPanel
         case browserOrFilePreviewTextEditor
+        /// Only while a File Preview text editor (or its find bar) has focus.
+        case filePreviewTextEditor
+        /// Everywhere except a focused File Preview text editor, so an editor
+        /// action can reuse the key there (Global Search yields ⌥⌘F to Find and Replace).
+        case outsideFilePreviewTextEditor
         case markdownPanel
         case simulatorPanel
         case rightSidebarFocus
@@ -83,6 +88,8 @@ extension KeyboardShortcutSettings.Action {
             case .browserPanel: return focusedBrowserPanel
             case .viewerPanel: return focusedBrowserPanel || focusedMarkdownPanel
             case .browserOrFilePreviewTextEditor: return focusedBrowserPanel || focusedFilePreviewTextEditor
+            case .filePreviewTextEditor: return focusedFilePreviewTextEditor
+            case .outsideFilePreviewTextEditor: return !focusedFilePreviewTextEditor
             case .markdownPanel: return focusedMarkdownPanel
             case .simulatorPanel: return focusedSimulatorPanel
             case .rightSidebarFocus: return rightSidebarFocused
@@ -131,6 +138,8 @@ extension KeyboardShortcutSettings.Action {
             case .viewerPanel: return .or(.atom(.browserFocus), .atom(.markdownFocus))
             case .browserOrFilePreviewTextEditor:
                 return .or(.atom(.browserFocus), .atom(.filePreviewTextEditorFocus))
+            case .filePreviewTextEditor: return .atom(.filePreviewTextEditorFocus)
+            case .outsideFilePreviewTextEditor: return .not(.atom(.filePreviewTextEditorFocus))
             case .markdownPanel: return .atom(.markdownFocus)
             case .simulatorPanel: return .atom(.simulatorFocus)
             case .rightSidebarFocus: return .atom(.sidebarFocus)
@@ -155,6 +164,19 @@ extension KeyboardShortcutSettings.Action {
         func overlaps(_ other: ShortcutContext) -> Bool {
             if self == .application || other == .application || self == other {
                 return true
+            }
+            if self == .outsideFilePreviewTextEditor || other == .outsideFilePreviewTextEditor {
+                let paired = self == .outsideFilePreviewTextEditor ? other : self
+                return paired != .filePreviewTextEditor
+            }
+            if self == .filePreviewTextEditor || other == .filePreviewTextEditor {
+                let paired = self == .filePreviewTextEditor ? other : self
+                switch paired {
+                case .browserOrFilePreviewTextEditor, .nonBrowserPanel, .outsideBrowserPanel, .canvasLayout:
+                    return true
+                default:
+                    return false
+                }
             }
             if self == .outsideBrowserPanel || other == .outsideBrowserPanel {
                 let paired = self == .outsideBrowserPanel ? other : self
@@ -242,6 +264,10 @@ extension KeyboardShortcutSettings.Action {
             return .browserPanel
         case .browserZoomIn, .browserZoomOut, .browserZoomReset:
             return .browserOrFilePreviewTextEditor
+        case .filePreviewFindAndReplace:
+            return .filePreviewTextEditor
+        case .globalSearch:
+            return .outsideFilePreviewTextEditor
         case .markdownZoomIn, .markdownZoomOut, .markdownZoomReset:
             return .markdownPanel
         case .simulatorHome, .simulatorRotateLeft, .simulatorRotateRight,

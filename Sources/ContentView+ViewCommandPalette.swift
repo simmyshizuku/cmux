@@ -121,6 +121,24 @@ extension ContentView {
         )
     }
 
+    static let commandPaletteFilePreviewFindAndReplaceCommandId = "palette.filePreviewFindAndReplace"
+
+    static func appendFilePreviewFindAndReplaceCommandContribution(
+        to contributions: inout [CommandPaletteCommandContribution],
+        panelSubtitle: @escaping (CommandPaletteContextSnapshot) -> String
+    ) {
+        let title = KeyboardShortcutSettings.Action.filePreviewFindAndReplace.label
+        contributions.append(
+            CommandPaletteCommandContribution(
+                commandId: commandPaletteFilePreviewFindAndReplaceCommandId,
+                title: { _ in title },
+                subtitle: panelSubtitle,
+                keywords: ["find", "replace", "replace all", "search", "regex", "file", "preview", "editor"],
+                when: { $0.bool(CommandPaletteContextKeys.panelIsFilePreviewTextEditor) }
+            )
+        )
+    }
+
     func registerViewCommandHandlers(_ registry: inout CommandPaletteHandlerRegistry) {
         registry.register(commandId: "palette.triggerFlash") {
             tabManager.triggerFocusFlash()
@@ -144,6 +162,18 @@ extension ContentView {
             // Let the palette dismiss and hand focus back before anchoring the popover.
             DispatchQueue.main.async {
                 if !preview.presentGoToLine() {
+                    NSSound.beep()
+                }
+            }
+        }
+        registry.register(commandId: Self.commandPaletteFilePreviewFindAndReplaceCommandId) {
+            guard let preview = tabManager.focusedTextFilePreviewPanel else {
+                NSSound.beep()
+                return
+            }
+            // Let the palette dismiss and hand focus back before focusing the find bar.
+            DispatchQueue.main.async {
+                if preview.textFindController?.show(replace: true) != true {
                     NSSound.beep()
                 }
             }

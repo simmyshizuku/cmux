@@ -175,6 +175,8 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case saveFilePreview
     /// Opens the Go to Line field in a focused File Preview text editor.
     case filePreviewGoToLine
+    /// Opens find with the replace row in a focused File Preview text editor.
+    case filePreviewFindAndReplace
     case openBrowser
     case focusBrowserAddressBar
     case browserBack

@@ -217,6 +217,16 @@ extension AppDelegate {
             }
             current = next.nextResponder
         }
+        // The editor's find bar sits beside the text view inside its scroll
+        // view, so a focused find field still counts as editor focus.
+        var view = responder as? NSView
+        while let candidate = view {
+            if let scrollView = candidate as? NSScrollView,
+               let textView = scrollView.documentView as? SavingTextView {
+                return textView
+            }
+            view = candidate.superview
+        }
         return nil
     }
 

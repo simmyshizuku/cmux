@@ -196,6 +196,7 @@ extension ShortcutAction {
         case .openDiffViewer: return ShortcutStroke(key: "d", command: true, shift: true, control: true)
         case .saveFilePreview: return ShortcutStroke(key: "s", command: true)
         case .filePreviewGoToLine: return ShortcutStroke(key: "g", control: true)
+        case .filePreviewFindAndReplace: return ShortcutStroke(key: "f", command: true, option: true)
         case .openBrowser: return ShortcutStroke(key: "l", command: true, shift: true)
         case .focusBrowserAddressBar: return ShortcutStroke(key: "l", command: true)
         case .browserBack: return ShortcutStroke(key: "[", command: true)
