@@ -1,4 +1,3 @@
-#if DEBUG
 import AppKit
 import AVKit
 import Foundation
@@ -7,6 +6,9 @@ import Quartz
 import WebKit
 
 /// Holds the permission-free AppKit fallback for one window screenshot.
+///
+/// Also used outside DEBUG by the tear-off preview (`WindowTearOffSnapshot`),
+/// so only the screenshot-socket-specific helpers stay DEBUG-only.
 struct WindowAppKitCapture: Sendable {
     let pngData: Data
 
@@ -55,6 +57,7 @@ struct WindowAppKitCapture: Sendable {
         }
     }
 
+#if DEBUG
     /// Returns explicitly owned overlays without treating WebKit's internal
     /// native view hierarchy as cmux UI.
     @MainActor
@@ -66,5 +69,5 @@ struct WindowAppKitCapture: Sendable {
                 !containsSystemCompositorContent(in: view)
         }
     }
-}
 #endif
+}
