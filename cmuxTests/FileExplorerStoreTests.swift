@@ -5,6 +5,7 @@ import Testing
 @testable import cmux_DEV
 #elseif canImport(cmux)
 @testable import cmux
+import CmuxFilePreviewCore
 #endif
 
 // MARK: - Mock Provider
@@ -1190,7 +1191,7 @@ struct FileSearchControllerTests {
         var searchRequests: [SearchRequest] = []
         var cancelCount = 0
 
-        func search(query rawQuery: String, rootPath: String, isLocal: Bool, contentRevision: Int) {
+        func search(query rawQuery: String, options: TextSearchOptions, rootPath: String, isLocal: Bool, contentRevision: Int) {
             searchRequests.append(SearchRequest(
                 query: rawQuery,
                 rootPath: rootPath,

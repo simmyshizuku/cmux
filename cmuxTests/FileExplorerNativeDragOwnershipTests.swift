@@ -5,6 +5,7 @@ import Testing
 @testable import cmux_DEV
 #elseif canImport(cmux)
 @testable import cmux
+import CmuxFilePreviewCore
 #endif
 
 @MainActor
@@ -423,7 +424,7 @@ struct FileExplorerNativeDragOwnershipTests {
     private final class SearchResultsDragTestSearchController: FileSearchControlling {
         var onSnapshotChanged: ((FileSearchSnapshot) -> Void)?
 
-        func search(query: String, rootPath: String, isLocal: Bool, contentRevision: Int) {}
+        func search(query: String, options: TextSearchOptions, rootPath: String, isLocal: Bool, contentRevision: Int) {}
 
         func cancel(clear: Bool) {}
 

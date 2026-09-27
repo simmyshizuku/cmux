@@ -1937,6 +1937,9 @@
 		C01E00060000000000000001 /* FilePreviewEditorChromeOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01E00060000000000000002 /* FilePreviewEditorChromeOverlay.swift */; };
 		C01E00010000000000000001 /* FilePreviewEditorSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01E00010000000000000002 /* FilePreviewEditorSettings.swift */; };
 		C0DE8652000000000000000F /* FilePreviewFileState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE86520000000000000010 /* FilePreviewFileState.swift */; };
+		F10D00000000000000000202 /* FilePreviewFindBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10D00000000000000000201 /* FilePreviewFindBarView.swift */; };
+		F10D00000000000000000302 /* FilePreviewFindController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10D00000000000000000301 /* FilePreviewFindController.swift */; };
+		F10D00000000000000000402 /* FilePreviewFindFieldContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10D00000000000000000401 /* FilePreviewFindFieldContainer.swift */; };
 		A5001432A5001432A5001432 /* FilePreviewFocusCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001431A5001431A5001431 /* FilePreviewFocusCoordinator.swift */; };
 		4E79F6486A786ADB5EE5E463 /* FilePreviewGoToLineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4B23D7D834760D0E62722B /* FilePreviewGoToLineTests.swift */; };
 		F11E00000000000000000303 /* FilePreviewGoToLineViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11E00000000000000000302 /* FilePreviewGoToLineViewController.swift */; };
@@ -1993,6 +1996,7 @@
 		F11E52270000000000005227 /* FilePreviewWordWrapSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11E52270000000000005228 /* FilePreviewWordWrapSettings.swift */; };
 		A5001445A5001445A5001445 /* FilePreviewWorkspaceOpenSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001444A5001444A5001444 /* FilePreviewWorkspaceOpenSupport.swift */; };
 		FE002103 /* FileSearchRipgrepParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE002003 /* FileSearchRipgrepParserTests.swift */; };
+		F10D00000000000000000002 /* FindBarButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10D00000000000000000001 /* FindBarButton.swift */; };
 		C35610000000000000000001 /* FinderFileDropRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35610000000000000000002 /* FinderFileDropRegressionTests.swift */; };
 		D0E0F0B4A1B2C3D4E5F60718 /* FindSelectionShortcutUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E0F0B5A1B2C3D4E5F60718 /* FindSelectionShortcutUITests.swift */; };
 		F1A0C0DE0000000000000002 /* FindTextFieldSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A0C0DE0000000000000001 /* FindTextFieldSupport.swift */; };
@@ -3791,6 +3795,8 @@
 		C0DE7B360000000000000001 /* TextBoxSubmitActionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE7B360000000000000002 /* TextBoxSubmitActionTests.swift */; };
 		C0DE5A420000000000000001 /* TextBoxSubmitAvailability.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE5A420000000000000002 /* TextBoxSubmitAvailability.swift */; };
 		D79030000000000000000001 /* TextBoxSubmitSurfaceControlling.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79030000000000000000002 /* TextBoxSubmitSurfaceControlling.swift */; };
+		F10D00000000000000000502 /* TextSearchOptions+Ripgrep.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10D00000000000000000501 /* TextSearchOptions+Ripgrep.swift */; };
+		F10D00000000000000000102 /* TextSearchOptionToggles.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10D00000000000000000101 /* TextSearchOptionToggles.swift */; };
 		A5002000 /* THIRD_PARTY_LICENSES.md in Resources */ = {isa = PBXBuildFile; fileRef = A5002001 /* THIRD_PARTY_LICENSES.md */; };
 		F50030050000000000000001 /* TitlebarAccessoryContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F50030050000000000000002 /* TitlebarAccessoryContainerView.swift */; };
 		F50030060000000000000001 /* TitlebarAccessoryHostingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F50030060000000000000002 /* TitlebarAccessoryHostingView.swift */; };
@@ -6078,6 +6084,9 @@
 		C01E00060000000000000002 /* FilePreviewEditorChromeOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewEditorChromeOverlay.swift; sourceTree = "<group>"; };
 		C01E00010000000000000002 /* FilePreviewEditorSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewEditorSettings.swift; sourceTree = "<group>"; };
 		C0DE86520000000000000010 /* FilePreviewFileState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewFileState.swift; sourceTree = "<group>"; };
+		F10D00000000000000000201 /* FilePreviewFindBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Panels/FilePreviewFindBarView.swift"; sourceTree = "<group>"; };
+		F10D00000000000000000301 /* FilePreviewFindController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Panels/FilePreviewFindController.swift"; sourceTree = "<group>"; };
+		F10D00000000000000000401 /* FilePreviewFindFieldContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Panels/FilePreviewFindFieldContainer.swift"; sourceTree = "<group>"; };
 		A5001431A5001431A5001431 /* FilePreviewFocusCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewFocusCoordinator.swift; sourceTree = "<group>"; };
 		0A4B23D7D834760D0E62722B /* FilePreviewGoToLineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilePreviewGoToLineTests.swift"; sourceTree = "<group>"; };
 		F11E00000000000000000302 /* FilePreviewGoToLineViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewGoToLineViewController.swift; sourceTree = "<group>"; };
@@ -6134,6 +6143,7 @@
 		F11E52270000000000005228 /* FilePreviewWordWrapSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewWordWrapSettings.swift; sourceTree = "<group>"; };
 		A5001444A5001444A5001444 /* FilePreviewWorkspaceOpenSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FilePreviewWorkspaceOpenSupport.swift; sourceTree = "<group>"; };
 		FE002003 /* FileSearchRipgrepParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchRipgrepParserTests.swift; sourceTree = "<group>"; };
+		F10D00000000000000000001 /* FindBarButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Find/FindBarButton.swift"; sourceTree = "<group>"; };
 		C35610000000000000000002 /* FinderFileDropRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderFileDropRegressionTests.swift; sourceTree = "<group>"; };
 		D0E0F0B5A1B2C3D4E5F60718 /* FindSelectionShortcutUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindSelectionShortcutUITests.swift; sourceTree = "<group>"; };
 		F1A0C0DE0000000000000001 /* FindTextFieldSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Find/FindTextFieldSupport.swift; sourceTree = "<group>"; };
@@ -7909,6 +7919,8 @@
 		C0DE7B360000000000000002 /* TextBoxSubmitActionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextBoxSubmitActionTests.swift; sourceTree = "<group>"; };
 		C0DE5A420000000000000002 /* TextBoxSubmitAvailability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextBoxSubmitAvailability.swift; sourceTree = "<group>"; };
 		D79030000000000000000002 /* TextBoxSubmitSurfaceControlling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextBoxSubmitSurfaceControlling.swift; sourceTree = "<group>"; };
+		F10D00000000000000000501 /* TextSearchOptions+Ripgrep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TextSearchOptions+Ripgrep.swift"; sourceTree = "<group>"; };
+		F10D00000000000000000101 /* TextSearchOptionToggles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Find/TextSearchOptionToggles.swift"; sourceTree = "<group>"; };
 		A5002001 /* THIRD_PARTY_LICENSES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_LICENSES.md; sourceTree = SOURCE_ROOT; };
 		F50030050000000000000002 /* TitlebarAccessoryContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitlebarAccessoryContainerView.swift; sourceTree = "<group>"; };
 		F50030060000000000000002 /* TitlebarAccessoryHostingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitlebarAccessoryHostingView.swift; sourceTree = "<group>"; };
@@ -10491,6 +10503,8 @@
 				468120000000000000000006 /* TerminalNotificationStore+HookResolution.swift */,
 				A5C41102A1B2C3D4E5F60718 /* TerminalNotificationCallerResolver.swift */,
 				A5001301 /* SurfaceSearchOverlay.swift */,
+				F10D00000000000000000101 /* TextSearchOptionToggles.swift */,
+				F10D00000000000000000001 /* FindBarButton.swift */,
 				E62F3D413D19EEA3E96B1271 /* TerminalSearchNavigation.swift */,
 				C0DE53350000000000000002 /* TerminalSearchOverlayHostingView.swift */,
 				A5008370 /* BrowserSearchOverlay.swift */,
@@ -10781,6 +10795,9 @@
 				D0B10017A1B2C3D4E5F60001 /* FilePreviewTextEditor.swift */,
 				F11E00000000000000000300 /* SavingTextView+FilePreviewLocation.swift */,
 				F11E00000000000000000302 /* FilePreviewGoToLineViewController.swift */,
+				F10D00000000000000000401 /* FilePreviewFindFieldContainer.swift */,
+				F10D00000000000000000301 /* FilePreviewFindController.swift */,
+				F10D00000000000000000201 /* FilePreviewFindBarView.swift */,
 				C01E00080000000000000002 /* NSTextView+FilePreviewTabWidth.swift */,
 				A5001451A5001451A5001451 /* FilePreviewNativeBackground.swift */,
 				A5001442A5001442A5001442 /* FilePreviewModeSupport.swift */,
@@ -11006,6 +11023,7 @@
 				F11E00000000000000000100 /* GoToFileIndex.swift */,
 				F11E00000000000000000200 /* GlobalFontMagnificationShortcut.swift */,
 				FE5996050000000000000001 /* FileExplorerSearchField.swift */,
+				F10D00000000000000000501 /* TextSearchOptions+Ripgrep.swift */,
 				A01600A90E464973B8D8122C /* SidebarSearchFieldCoordinator.swift */,
 				C31DD7A6E10E483D915E7F2B /* SidebarSearchFieldView.swift */,
 				D7F7A04753B142F99676430C /* SidebarSearchField.swift */,
@@ -14320,6 +14338,9 @@
 					C01E00060000000000000001 /* FilePreviewEditorChromeOverlay.swift in Sources */,
 					C01E00010000000000000001 /* FilePreviewEditorSettings.swift in Sources */,
 				C0DE8652000000000000000F /* FilePreviewFileState.swift in Sources */,
+				F10D00000000000000000202 /* FilePreviewFindBarView.swift in Sources */,
+				F10D00000000000000000302 /* FilePreviewFindController.swift in Sources */,
+				F10D00000000000000000402 /* FilePreviewFindFieldContainer.swift in Sources */,
 				A5001432A5001432A5001432 /* FilePreviewFocusCoordinator.swift in Sources */,
 				F11E00000000000000000303 /* FilePreviewGoToLineViewController.swift in Sources */,
 				C0DE86520000000000000101 /* FilePreviewImageLoadResult.swift in Sources */,
@@ -14365,6 +14386,7 @@
 				C0DE86520000000000000113 /* FilePreviewViewport.swift in Sources */,
 					F11E52270000000000005227 /* FilePreviewWordWrapSettings.swift in Sources */,
 				A5001445A5001445A5001445 /* FilePreviewWorkspaceOpenSupport.swift in Sources */,
+				F10D00000000000000000002 /* FindBarButton.swift in Sources */,
 				F1A0C0DE0000000000000002 /* FindTextFieldSupport.swift in Sources */,
 				F0C05170000000000000002 /* FocusHistory.swift in Sources */,
 				5E55400000000000000000D1 /* FocusStealingResponderConformances.swift in Sources */,
@@ -15623,6 +15645,8 @@
 				C0DE7B350000000000000001 /* TextBoxSubmitActionSettings.swift in Sources */,
 				C0DE5A420000000000000001 /* TextBoxSubmitAvailability.swift in Sources */,
 				D79030000000000000000001 /* TextBoxSubmitSurfaceControlling.swift in Sources */,
+				F10D00000000000000000502 /* TextSearchOptions+Ripgrep.swift in Sources */,
+				F10D00000000000000000102 /* TextSearchOptionToggles.swift in Sources */,
 				F50030050000000000000001 /* TitlebarAccessoryContainerView.swift in Sources */,
 					F50030060000000000000001 /* TitlebarAccessoryHostingView.swift in Sources */,
 					C4160A060000000000000001 /* TitlebarChromeGeometryReporting.swift in Sources */,

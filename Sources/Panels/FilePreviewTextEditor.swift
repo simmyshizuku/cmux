@@ -76,6 +76,7 @@ struct FilePreviewTextEditor<PanelModel>: NSViewRepresentable where PanelModel: 
         context.coordinator.isHighlightingVisible = isVisibleInUI
 
         scrollView.documentView = textView
+        textView.findController = FilePreviewFindController(textView: textView, scrollView: scrollView)
         panel.attachTextView(textView)
         textView.applyFilePreviewWordWrap(wordWrap, scrollView: scrollView)
         Self.installChrome(on: scrollView, textView: textView)
@@ -413,8 +414,10 @@ extension SavingTextView {
         textView.allowsUndo = true
         textView.isRichText = false
         textView.importsGraphics = false
-        textView.usesFindBar = true
-        textView.isIncrementalSearchingEnabled = true
+        // Find and replace use cmux's own bar (FilePreviewFindController), which
+        // adds match case / whole word / regex; keep AppKit's out of the way.
+        textView.usesFindBar = false
+        textView.usesFindPanel = false
         textView.usesFontPanel = false
         textView.applyCurrentPreviewFont()
         textView.minSize = NSSize(width: 0, height: 0)
@@ -488,6 +491,8 @@ final class SavingTextView: NSTextView {
     var appliedFilePreviewTabWidth: Int?
     var appliedFilePreviewTabStopInterval: CGFloat?
     private var previewFontSize: CGFloat = 13
+    /// Find and replace for this editor; installed with its scroll view.
+    var findController: FilePreviewFindController?
     private var pendingEditorShortcutChordPrefix: ShortcutStroke?
     private var lastKeyEquivalentProbeTimestamp: TimeInterval?
     private var fontMagnificationObserver: GlobalFontMagnificationChangeObserver?
@@ -535,6 +540,11 @@ final class SavingTextView: NSTextView {
         }
         lastKeyEquivalentProbeTimestamp = event.timestamp
         if handleEditorShortcut(event) {
+            return true
+        }
+        if window?.firstResponder === self,
+           let findController, findController.isVisible,
+           findController.barView.handleFindKeyEquivalent(event) {
             return true
         }
         return super.performKeyEquivalent(with: event)

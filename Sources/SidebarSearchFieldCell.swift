@@ -9,7 +9,13 @@ final class SidebarSearchFieldCell: NSSearchFieldCell {
     }
 
     override func searchTextRect(forBounds rect: NSRect) -> NSRect {
-        SidebarSearchField.alignedSearchTextRect(super.searchTextRect(forBounds: rect), in: rect)
+        let aligned = SidebarSearchField.alignedSearchTextRect(super.searchTextRect(forBounds: rect), in: rect)
+        return (controlView as? SidebarSearchField)?.insetForTrailingAccessory(aligned) ?? aligned
+    }
+
+    override func cancelButtonRect(forBounds rect: NSRect) -> NSRect {
+        let inset = (controlView as? SidebarSearchField)?.trailingAccessoryInset ?? 0
+        return super.cancelButtonRect(forBounds: rect).offsetBy(dx: -inset, dy: 0)
     }
 
     override func draw(withFrame frame: NSRect, in controlView: NSView) {

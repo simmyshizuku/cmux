@@ -12,6 +12,17 @@ class SidebarSearchField: NSSearchField {
     var onCommandSubmit: (() -> Void)?
     private var hoverTrackingArea: NSTrackingArea?
 
+    /// Width kept clear at the trailing edge for accessory controls placed
+    /// inside the bezel (Find's `Aa` / `ab` / `.*` toggles). The text and the
+    /// clear button end before it.
+    var trailingAccessoryInset: CGFloat = 0 {
+        didSet {
+            needsLayout = true
+            needsDisplay = true
+            window?.invalidateCursorRects(for: self)
+        }
+    }
+
     override class var cellClass: AnyClass? {
         get { SidebarSearchFieldCell.self }
         set { super.cellClass = newValue }
@@ -40,7 +51,17 @@ class SidebarSearchField: NSSearchField {
     }
 
     override var searchTextBounds: NSRect {
-        Self.alignedSearchTextRect(super.searchTextBounds, in: bounds)
+        insetForTrailingAccessory(Self.alignedSearchTextRect(super.searchTextBounds, in: bounds))
+    }
+
+    override var cancelButtonBounds: NSRect {
+        super.cancelButtonBounds.offsetBy(dx: -trailingAccessoryInset, dy: 0)
+    }
+
+    func insetForTrailingAccessory(_ rect: NSRect) -> NSRect {
+        var rect = rect
+        rect.size.width = max(0, rect.width - trailingAccessoryInset)
+        return rect
     }
 
     static func alignedSearchButtonRect(_ nativeRect: NSRect, in bounds: NSRect) -> NSRect {

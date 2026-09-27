@@ -189,6 +189,12 @@ Global Font Magnification (Settings > App, `app.globalFontMagnification`) scales
 
 Ctrl+G in a focused File Preview text editor opens a Go to Line field. Type a line number, or `line:column`, and press Return to move the caret there and center that line; Escape closes the field. The same action is in the command palette as Go to Line while a text preview is focused. Rebind it with `shortcuts.bindings.filePreviewGoToLine`.
 
+## File Preview find and replace
+
+Find (Cmd+F) in a focused File Preview text editor opens a find bar above the text. Return and Shift+Return move to the next and previous match (Find Next and Find Previous work too), and Escape closes the bar and selects the current match. The `Aa`, `ab`, and `.*` toggles turn on match case, whole word, and regular expressions (Option+Cmd+C, W, and R while the bar is open). The chevron opens a replace row: Return replaces the current match, and Replace All (Option+Cmd+Return) replaces every match as one undoable edit. With regular expressions on, the replacement accepts `$1`, `$&`, `\n`, and `\t`.
+
+Find in Directory (Cmd+Shift+F) has the same three toggles in its search field.
+
 Cmd-clicking a `path:line` or `path:line:column` link in a terminal, the form compilers and test runners print, opens the file in File Preview at that location when `app.openSupportedFilesInCmux` is on. Markdown and HTML files, and every file when that setting is off, still open in the preferred editor at the same location.
 
 ## New Cloud Workspace shortcut and the plus-button menu

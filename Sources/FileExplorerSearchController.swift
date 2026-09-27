@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import CmuxFilePreviewCore
 
 struct FileSearchResult: Equatable, Sendable {
     let path: String
@@ -183,7 +184,7 @@ enum FileExplorerSearchMessages {
 protocol FileSearchControlling: AnyObject {
     var onSnapshotChanged: ((FileSearchSnapshot) -> Void)? { get set }
 
-    func search(query rawQuery: String, rootPath: String, isLocal: Bool, contentRevision: Int)
+    func search(query rawQuery: String, options: TextSearchOptions, rootPath: String, isLocal: Bool, contentRevision: Int)
     func cancel(clear: Bool)
 }
 
@@ -420,6 +421,7 @@ private enum FileSearchPipeReader {
 final class FileSearchController: FileSearchControlling {
     private struct Request: Equatable {
         let query: String
+        let options: TextSearchOptions
         let rootPath: String
         let isLocal: Bool
         let contentRevision: Int
@@ -448,10 +450,11 @@ final class FileSearchController: FileSearchControlling {
     private var pipeline: FileSearchOutputPipeline?
     private var searchTask: Task<Void, Never>?
 
-    func search(query rawQuery: String, rootPath: String, isLocal: Bool, contentRevision: Int = 0) {
+    func search(query rawQuery: String, options: TextSearchOptions, rootPath: String, isLocal: Bool, contentRevision: Int = 0) {
         let query = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         let nextRequest = Request(
             query: query,
+            options: options,
             rootPath: rootPath,
             isLocal: isLocal,
             contentRevision: contentRevision
@@ -505,8 +508,7 @@ final class FileSearchController: FileSearchControlling {
             "--json",
             "--line-number",
             "--column",
-            "--smart-case",
-            "--fixed-strings",
+        ] + options.ripgrepArguments + [
             "--max-columns", "300",
             "--max-columns-preview",
             "--color", "never",

@@ -1,4 +1,6 @@
 import AppKit
+import CmuxFilePreviewCore
+import CmuxFoundation
 
 final class FileExplorerSearchField: SidebarSearchField {
     var fileExplorerPanelPlacement: FileExplorerPanelPlacement = .rightSidebar
@@ -6,6 +8,8 @@ final class FileExplorerSearchField: SidebarSearchField {
     var onMoveSelection: ((Int) -> Void)?
     var onCommit: (() -> Void)?
     var onFocus: (() -> Void)?
+    /// Called for ⌥⌘C / ⌥⌘W / ⌥⌘R while editing, to flip a search option.
+    var onToggleOption: ((WritableKeyPath<TextSearchOptions, Bool>) -> Void)?
 
     override func becomeFirstResponder() -> Bool {
         let result = super.becomeFirstResponder()
@@ -29,7 +33,24 @@ final class FileExplorerSearchField: SidebarSearchField {
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        handleOpenSelectionShortcut(event) || super.performKeyEquivalent(with: event)
+        handleOpenSelectionShortcut(event) || handleOptionToggle(event) || super.performKeyEquivalent(with: event)
+    }
+
+    private func handleOptionToggle(_ event: NSEvent) -> Bool {
+        guard let onToggleOption,
+              event.type == .keyDown,
+              let editor = currentEditor(),
+              window?.firstResponder === editor,
+              event.modifierFlags.intersection([.command, .option, .control, .shift]) == [.command, .option] else {
+            return false
+        }
+        switch KeyboardLayout.normalizedCharacters(for: event) {
+        case "c": onToggleOption(\.matchCase)
+        case "w": onToggleOption(\.matchWholeWord)
+        case "r": onToggleOption(\.useRegularExpression)
+        default: return false
+        }
+        return true
     }
 
     private func searchFieldMoveDelta(for event: NSEvent) -> Int? {

@@ -9,6 +9,7 @@ private typealias StoredShortcut = cmux_DEV.StoredShortcut
 private typealias ShortcutStroke = cmux_DEV.ShortcutStroke
 #elseif canImport(cmux)
 @testable import cmux
+import CmuxFilePreviewCore
 private typealias StoredShortcut = cmux.StoredShortcut
 private typealias ShortcutStroke = cmux.ShortcutStroke
 #endif
@@ -16,7 +17,7 @@ private typealias ShortcutStroke = cmux.ShortcutStroke
 private final class ShortcutNoopFileSearchController: FileSearchControlling {
     var onSnapshotChanged: ((FileSearchSnapshot) -> Void)?
 
-    func search(query rawQuery: String, rootPath: String, isLocal: Bool, contentRevision: Int) {}
+    func search(query rawQuery: String, options: TextSearchOptions, rootPath: String, isLocal: Bool, contentRevision: Int) {}
     func cancel(clear: Bool) {}
 }
 

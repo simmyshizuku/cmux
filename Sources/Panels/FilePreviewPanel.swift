@@ -1667,25 +1667,10 @@ final class FilePreviewPanel: Panel, ObservableObject, FilePreviewTextEditingPan
         return textView.presentFilePreviewGoToLine()
     }
 
-    /// Whether the text editor's native find bar is showing.
-    var isTextFinderVisible: Bool {
-        previewMode == .text && textView?.enclosingScrollView?.isFindBarVisible == true
-    }
-
-    /// Runs a native find bar action (show, next, previous, hide, ...) in the text editor.
-    ///
-    /// - Returns: `false` when this preview is not showing an editable text file.
-    @discardableResult
-    func performTextFinderAction(_ action: NSTextFinder.Action) -> Bool {
-        guard previewMode == .text, let textView else { return false }
-        // NSTextView reads the action from the sender's tag.
-        let sender = NSMenuItem()
-        sender.tag = action.rawValue
-        textView.performTextFinderAction(sender)
-        if action == .hideFindInterface {
-            textView.window?.makeFirstResponder(textView)
-        }
-        return true
+    /// Find and replace for the text editor, or `nil` when this preview is not editable text.
+    var textFindController: FilePreviewFindController? {
+        guard previewMode == .text else { return nil }
+        return (textView as? SavingTextView)?.findController
     }
 
     func textEditorDidShowContent(revision: Int) {

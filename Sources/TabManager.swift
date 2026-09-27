@@ -906,7 +906,7 @@ class TabManager: ObservableObject {
         selectedTerminalPanel?.searchState != nil ||
             focusedBrowserPanel?.searchState != nil ||
             focusedMarkdownPanel?.searchState != nil ||
-            focusedTextFilePreviewPanel?.isTextFinderVisible == true
+            focusedTextFilePreviewPanel?.textFindController?.isVisible == true
     }
 
     var canUseSelectionForFind: Bool {
@@ -946,7 +946,7 @@ class TabManager: ObservableObject {
             return browserPanel.searchState != nil || browserPanel.isDiffViewerFindOwner
         }
         if let filePreviewPanel = focusedTextFilePreviewPanel {
-            return filePreviewPanel.performTextFinderAction(.showFindInterface)
+            return filePreviewPanel.textFindController?.show() ?? false
         }
         guard let markdownPanel = focusedMarkdownPanel else { return false }
         markdownPanel.startFind()
@@ -955,7 +955,7 @@ class TabManager: ObservableObject {
 
     func searchSelection() {
         guard let panel = selectedTerminalPanel else {
-            focusedTextFilePreviewPanel?.performTextFinderAction(.setSearchString)
+            focusedTextFilePreviewPanel?.textFindController?.useSelectionForFind()
             return
         }
         if panel.searchState == nil {
@@ -982,7 +982,7 @@ class TabManager: ObservableObject {
             return
         }
         if let filePreviewPanel = focusedTextFilePreviewPanel {
-            filePreviewPanel.performTextFinderAction(.nextMatch)
+            filePreviewPanel.textFindController?.findNext()
             return
         }
         focusedMarkdownPanel?.findNext()
@@ -999,7 +999,7 @@ class TabManager: ObservableObject {
             return
         }
         if let filePreviewPanel = focusedTextFilePreviewPanel {
-            filePreviewPanel.performTextFinderAction(.previousMatch)
+            filePreviewPanel.textFindController?.findPrevious()
             return
         }
         focusedMarkdownPanel?.findPrevious()
@@ -1106,7 +1106,7 @@ class TabManager: ObservableObject {
             return
         }
         if let filePreviewPanel = focusedTextFilePreviewPanel {
-            filePreviewPanel.performTextFinderAction(.hideFindInterface)
+            filePreviewPanel.textFindController?.hide()
             return
         }
         focusedMarkdownPanel?.hideFind()

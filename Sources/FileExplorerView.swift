@@ -2,6 +2,7 @@ import AppKit
 import Bonsplit
 import Combine
 import CmuxAppKitSupportUI
+import CmuxFilePreviewCore
 import CmuxFoundation
 import CmuxWorkspaces
 import CmuxSettings
@@ -894,6 +895,8 @@ final class FileExplorerContainerView: NSView {
     private let searchBarView: NSView
     private let searchField: FileExplorerSearchField
     private let searchStatusLabel: NSTextField
+    private let searchOptionToggles = TextSearchOptionToggles(shortcutHints: true)
+    private var searchOptions = TextSearchOptions()
     private let scrollView: NSScrollView
     private let outlineView: FileExplorerNSOutlineView
     private let searchScrollView: NSScrollView
@@ -993,7 +996,17 @@ final class FileExplorerContainerView: NSView {
             self.coordinator.noteKeyboardFocus(mode: self.representedRightSidebarMode(), in: self.window)
             self.updateSearchLayout()
         }
+        searchField.onToggleOption = { [weak self] keyPath in
+            self?.searchOptionToggles.toggle(keyPath)
+        }
+        searchOptionToggles.onChange = { [weak self] options in
+            guard let self else { return }
+            self.searchOptions = options
+            self.refreshSearchIfNeeded()
+        }
         searchBarView.addSubview(searchField)
+        searchField.addSubview(searchOptionToggles)
+        searchField.trailingAccessoryInset = searchOptionToggles.fittingSize.width + 4
 
         searchStatusLabel.translatesAutoresizingMaskIntoConstraints = false
         searchStatusLabel.textColor = .secondaryLabelColor
@@ -1146,6 +1159,9 @@ final class FileExplorerContainerView: NSView {
             searchField.topAnchor.constraint(equalTo: searchBarView.topAnchor, constant: SidebarSearchField.topPadding),
             searchFieldHeightConstraint,
             searchField.widthAnchor.constraint(greaterThanOrEqualToConstant: 120),
+
+            searchOptionToggles.trailingAnchor.constraint(equalTo: searchField.trailingAnchor, constant: -2),
+            searchOptionToggles.centerYAnchor.constraint(equalTo: searchField.centerYAnchor),
 
             searchStatusLabel.leadingAnchor.constraint(equalTo: searchField.leadingAnchor, constant: 4),
             searchStatusLabel.trailingAnchor.constraint(equalTo: searchField.trailingAnchor),
@@ -1413,6 +1429,7 @@ final class FileExplorerContainerView: NSView {
 #endif
         searchController.search(
             query: searchField.stringValue,
+            options: searchOptions,
             rootPath: currentRootPath,
             isLocal: currentProviderIsLocal,
             contentRevision: currentContentRevision

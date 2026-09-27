@@ -6,6 +6,7 @@ import XCTest
 @testable import cmux_DEV
 #elseif canImport(cmux)
 @testable import cmux
+import CmuxFilePreviewCore
 #endif
 
 final class FileSearchRipgrepParserTests: XCTestCase {
@@ -241,7 +242,7 @@ struct FileSearchWorkspaceScopeTests {
         var onSnapshotChanged: ((FileSearchSnapshot) -> Void)?
         var searchRequests: [String] = []
 
-        func search(query rawQuery: String, rootPath: String, isLocal: Bool, contentRevision: Int) {
+        func search(query rawQuery: String, options: TextSearchOptions, rootPath: String, isLocal: Bool, contentRevision: Int) {
             searchRequests.append(rawQuery)
         }
 
