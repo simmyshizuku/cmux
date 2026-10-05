@@ -382,23 +382,27 @@ struct MarkdownWebRenderer: NSViewRepresentable {
 
         private func applyTheme(_ theme: MarkdownWebTheme) {
             guard let webView else { return }
-            let payload = [
-                "--bgColor-default": theme.background,
-                "--bgColor-muted": theme.mutedBackground,
-                "--bgColor-neutral-muted": theme.neutralMutedBackground,
-                "--borderColor-default": theme.border,
-                "--borderColor-muted": theme.mutedBorder,
-                "--borderColor-neutral-muted": theme.mutedBorder
+            let payload: [String: Any] = [
+                "vars": theme.cssVariables,
+                "terminalPalette": theme.usesTerminalPalette
             ]
             guard let data = try? JSONSerialization.data(withJSONObject: payload),
                   let json = String(data: data, encoding: .utf8) else { return }
+            // Earlier themes may have set variables this one omits (e.g. a
+            // palette that went away), so clear anything not re-set.
             let js = """
-            (function(vars) {
+            (function(theme) {
               var content = document.getElementById('content');
               if (!content) { return; }
+              var vars = theme.vars;
+              (window.__cmuxThemeVarNames || []).forEach(function(name) {
+                if (!(name in vars)) { content.style.removeProperty(name); }
+              });
               Object.keys(vars).forEach(function(name) {
                 content.style.setProperty(name, vars[name]);
               });
+              window.__cmuxThemeVarNames = Object.keys(vars);
+              content.classList.toggle('cmux-terminal-palette', !!theme.terminalPalette);
               content.style.background = 'transparent';
               if (window.__cmuxApplyTheme) { window.__cmuxApplyTheme(); }
             })(\(json));

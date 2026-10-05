@@ -75,7 +75,11 @@ struct MarkdownPanelView: View {
         ZStack {
             MarkdownWebRenderer(
                 markdown: panel.content,
-                theme: MarkdownWebTheme.resolve(backgroundColor: themeBackgroundColor),
+                theme: MarkdownWebTheme.resolve(
+                    backgroundColor: themeBackgroundColor,
+                    foregroundColor: themeForegroundColor,
+                    palette: appearance.palette
+                ),
                 backgroundColor: appearance.contentBackgroundColor,
                 isVisibleInUI: isVisibleInUI && panel.displayMode == .preview,
                 panelId: panel.id,

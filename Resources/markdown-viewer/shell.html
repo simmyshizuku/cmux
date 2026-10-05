@@ -215,18 +215,86 @@ body {
   line-height: 1.45;
 }
 .cmux-render-error {
-  color: #f85149;
+  color: var(--fgColor-danger);
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
   font-size: 12.5px;
   white-space: pre-wrap;
   padding: 8px 12px;
-  border: 1px solid #f85149;
+  border: 1px solid var(--fgColor-danger);
   border-radius: 6px;
   margin: 0.6em 0;
   text-align: left;
 }
 /* Custom selection color that reads on both themes. */
 ::selection { background: rgba(56, 139, 253, 0.4); }
+/* Terminal palette (set by cmux when the terminal's ANSI colors are known).
+   Tokens keep the hue GitHub's light and dark themes give them, taken from
+   the matching ANSI slot: red keywords, magenta titles, blue attributes,
+   cyan strings, yellow built-ins, green tags. */
+#content.cmux-terminal-palette ::selection { background: var(--cmux-selection-background); }
+#content.cmux-terminal-palette .hljs,
+#content.cmux-terminal-palette .hljs-subst,
+#content.cmux-terminal-palette .hljs-emphasis,
+#content.cmux-terminal-palette .hljs-strong {
+  color: var(--fgColor-default);
+}
+#content.cmux-terminal-palette .hljs-doctag,
+#content.cmux-terminal-palette .hljs-keyword,
+#content.cmux-terminal-palette .hljs-meta .hljs-keyword,
+#content.cmux-terminal-palette .hljs-template-tag,
+#content.cmux-terminal-palette .hljs-template-variable,
+#content.cmux-terminal-palette .hljs-type,
+#content.cmux-terminal-palette .hljs-variable.language_ {
+  color: var(--cmux-ansi-red, inherit);
+}
+#content.cmux-terminal-palette .hljs-title,
+#content.cmux-terminal-palette .hljs-title.class_,
+#content.cmux-terminal-palette .hljs-title.class_.inherited__,
+#content.cmux-terminal-palette .hljs-title.function_ {
+  color: var(--cmux-ansi-magenta, inherit);
+}
+#content.cmux-terminal-palette .hljs-attr,
+#content.cmux-terminal-palette .hljs-attribute,
+#content.cmux-terminal-palette .hljs-literal,
+#content.cmux-terminal-palette .hljs-meta,
+#content.cmux-terminal-palette .hljs-number,
+#content.cmux-terminal-palette .hljs-operator,
+#content.cmux-terminal-palette .hljs-selector-attr,
+#content.cmux-terminal-palette .hljs-selector-class,
+#content.cmux-terminal-palette .hljs-selector-id,
+#content.cmux-terminal-palette .hljs-variable,
+#content.cmux-terminal-palette .hljs-section {
+  color: var(--cmux-ansi-blue, inherit);
+}
+#content.cmux-terminal-palette .hljs-meta .hljs-string,
+#content.cmux-terminal-palette .hljs-regexp,
+#content.cmux-terminal-palette .hljs-string {
+  color: var(--cmux-ansi-cyan, inherit);
+}
+#content.cmux-terminal-palette .hljs-built_in,
+#content.cmux-terminal-palette .hljs-symbol,
+#content.cmux-terminal-palette .hljs-bullet {
+  color: var(--cmux-ansi-yellow, inherit);
+}
+#content.cmux-terminal-palette .hljs-code,
+#content.cmux-terminal-palette .hljs-comment,
+#content.cmux-terminal-palette .hljs-formula {
+  color: var(--cmux-ansi-comment, inherit);
+}
+#content.cmux-terminal-palette .hljs-name,
+#content.cmux-terminal-palette .hljs-quote,
+#content.cmux-terminal-palette .hljs-selector-pseudo,
+#content.cmux-terminal-palette .hljs-selector-tag {
+  color: var(--cmux-ansi-green, inherit);
+}
+#content.cmux-terminal-palette .hljs-addition {
+  color: var(--cmux-ansi-green, inherit);
+  background-color: color-mix(in srgb, var(--cmux-ansi-green) 15%, transparent);
+}
+#content.cmux-terminal-palette .hljs-deletion {
+  color: var(--cmux-ansi-red, inherit);
+  background-color: color-mix(in srgb, var(--cmux-ansi-red) 15%, transparent);
+}
 /* Smooth-anchor scroll for heading links. */
 html { scroll-behavior: smooth; }
 /* Loading shimmer while the first render is in flight. */
@@ -1534,16 +1602,48 @@ html { scroll-behavior: smooth; }
     applyMermaidZoom(contentEl);
   };
 
+  function mermaidTerminalThemeVariables() {
+    if (!contentEl.classList.contains('cmux-terminal-palette')) { return null; }
+    var style = getComputedStyle(contentEl);
+    function cssVar(name) { return style.getPropertyValue(name).trim(); }
+    var fill = cssVar('--cmux-diagram-fill');
+    if (!fill) { return null; }
+    var foreground = cssVar('--fgColor-default');
+    var muted = cssVar('--fgColor-muted');
+    return {
+      darkMode: darkMql.matches,
+      background: cssVar('--cmux-terminal-background'),
+      fontFamily: 'ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif',
+      primaryColor: fill,
+      primaryTextColor: foreground,
+      primaryBorderColor: cssVar('--borderColor-accent-emphasis') || muted,
+      secondaryColor: cssVar('--cmux-diagram-fill-alt') || fill,
+      secondaryTextColor: foreground,
+      tertiaryColor: cssVar('--cmux-terminal-background'),
+      tertiaryTextColor: foreground,
+      lineColor: muted,
+      edgeLabelBackground: fill,
+      textColor: foreground,
+      noteTextColor: foreground
+    };
+  }
+
   function renderMermaidBlocks() {
     if (typeof mermaid === 'undefined') { renderLibError('mermaid', 'library missing'); return; }
     try {
       if (!mermaidInitialized) {
-        mermaid.initialize({
+        var mermaidConfig = {
           startOnLoad: false,
           theme: darkMql.matches ? 'dark' : 'default',
           securityLevel: 'strict',
           fontFamily: 'ui-sans-serif, -apple-system, BlinkMacSystemFont, sans-serif'
-        });
+        };
+        var terminalThemeVariables = mermaidTerminalThemeVariables();
+        if (terminalThemeVariables) {
+          mermaidConfig.theme = 'base';
+          mermaidConfig.themeVariables = terminalThemeVariables;
+        }
+        mermaid.initialize(mermaidConfig);
         mermaidInitialized = true;
       }
     } catch (e) { /* ignore reinit failure */ }

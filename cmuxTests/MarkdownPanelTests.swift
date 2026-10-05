@@ -60,6 +60,58 @@ final class MarkdownPanelTests: XCTestCase {
         XCTAssertFalse(theme.neutralMutedBackground.contains("0.420"))
     }
 
+    func testMarkdownThemeWithoutPaletteKeepsGitHubForegroundColors() {
+        let theme = MarkdownWebTheme.resolve(backgroundColor: .black)
+
+        XCTAssertFalse(theme.usesTerminalPalette)
+        XCTAssertNil(theme.cssVariables["--fgColor-default"])
+        XCTAssertNil(theme.cssVariables["--fgColor-accent"])
+        XCTAssertEqual(theme.cssVariables["--bgColor-muted"], theme.mutedBackground)
+    }
+
+    func testMarkdownThemeMapsTerminalPaletteOntoGitHubVariables() {
+        let background = NSColor(srgbRed: 0.10, green: 0.10, blue: 0.12, alpha: 1)
+        let foreground = NSColor(srgbRed: 0.90, green: 0.90, blue: 0.88, alpha: 1)
+        let red = NSColor(srgbRed: 1.0, green: 0.40, blue: 0.40, alpha: 1)
+        let blue = NSColor(srgbRed: 0.40, green: 0.65, blue: 1.0, alpha: 1)
+        let theme = MarkdownWebTheme.resolve(
+            backgroundColor: background,
+            foregroundColor: foreground,
+            palette: [1: red, 4: blue]
+        )
+
+        XCTAssertTrue(theme.usesTerminalPalette)
+        XCTAssertEqual(theme.cssVariables["--fgColor-default"], foreground.markdownCSSColor)
+        XCTAssertEqual(theme.cssVariables["--fgColor-accent"], blue.markdownCSSColor)
+        XCTAssertEqual(theme.cssVariables["--fgColor-danger"], red.markdownCSSColor)
+        XCTAssertEqual(theme.cssVariables["--cmux-ansi-red"], red.markdownCSSColor)
+        // Surface variables still come from the background overlays.
+        XCTAssertEqual(theme.cssVariables["--bgColor-muted"], theme.mutedBackground)
+        // Slots the palette does not define fall through to GitHub's colors.
+        XCTAssertNil(theme.cssVariables["--fgColor-success"])
+    }
+
+    func testMarkdownThemeRaisesUnreadablePaletteSlotsToContrastFloor() throws {
+        let background = NSColor(srgbRed: 0.10, green: 0.10, blue: 0.12, alpha: 1)
+        let foreground = NSColor(srgbRed: 0.90, green: 0.90, blue: 0.88, alpha: 1)
+        let invisibleBlue = NSColor(srgbRed: 0.08, green: 0.10, blue: 0.20, alpha: 1)
+        let theme = MarkdownWebTheme.resolve(
+            backgroundColor: background,
+            foregroundColor: foreground,
+            palette: [4: invisibleBlue]
+        )
+
+        let accent = try XCTUnwrap(theme.cssVariables["--fgColor-accent"].flatMap(Self.cssRGBAComponents))
+        let accentColor = NSColor(
+            srgbRed: CGFloat(accent.red) / 255,
+            green: CGFloat(accent.green) / 255,
+            blue: CGFloat(accent.blue) / 255,
+            alpha: 1
+        )
+        XCTAssertGreaterThanOrEqual(accentColor.markdownContrastRatio(with: background), 4.4)
+        XCTAssertNotEqual(theme.cssVariables["--fgColor-accent"], invisibleBlue.markdownCSSColor)
+    }
+
     func testMarkdownThemeOverlayFallsBackToFullOverlayWhenContrastIsUnreachable() {
         let base = NSColor(srgbRed: 0.2, green: 0.24, blue: 0.28, alpha: 0.4)
         let overlay = base.markdownThemeOverlay(targetContrast: 21, of: base)

@@ -426,13 +426,17 @@ struct PanelAppearance {
     let unfocusedOverlayNSColor: NSColor
     let unfocusedOverlayOpacity: Double
     let usesClearContentBackground: Bool
+    /// The terminal's ANSI palette by index, for panels that color content
+    /// to match the terminal.
+    let palette: [Int: NSColor]
     init(
         backgroundColor: NSColor,
         foregroundColor: NSColor,
         dividerColor: Color,
         unfocusedOverlayNSColor: NSColor,
         unfocusedOverlayOpacity: Double,
-        usesClearContentBackground: Bool
+        usesClearContentBackground: Bool,
+        palette: [Int: NSColor] = [:]
     ) {
         self.backgroundColor = backgroundColor
         self.foregroundColor = foregroundColor
@@ -440,6 +444,7 @@ struct PanelAppearance {
         self.unfocusedOverlayNSColor = unfocusedOverlayNSColor
         self.unfocusedOverlayOpacity = unfocusedOverlayOpacity
         self.usesClearContentBackground = usesClearContentBackground
+        self.palette = palette
     }
 
     var contentBackgroundColor: NSColor {
@@ -476,7 +481,8 @@ struct PanelAppearance {
                 opacity: config.backgroundOpacity,
                 usesGhosttyGlassStyle: config.backgroundBlur.isMacOSGlassStyle,
                 usesTransparentWindow: usesTransparentWindow
-            )
+            ),
+            palette: config.palette
         )
     }
 

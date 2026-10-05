@@ -390,8 +390,32 @@ struct MarkdownWebTheme: Equatable {
     let neutralMutedBackground: String
     let border: String
     let mutedBorder: String
+    /// GitHub foreground, accent, and syntax variables re-pointed at the
+    /// terminal's foreground and ANSI palette. Empty when no palette is
+    /// supplied, which leaves github-markdown-css's own colors in place.
+    let paletteVariables: [String: String]
 
-    static func resolve(backgroundColor: NSColor) -> MarkdownWebTheme {
+    var usesTerminalPalette: Bool {
+        !paletteVariables.isEmpty
+    }
+
+    var cssVariables: [String: String] {
+        let surface = [
+            "--bgColor-default": background,
+            "--bgColor-muted": mutedBackground,
+            "--bgColor-neutral-muted": neutralMutedBackground,
+            "--borderColor-default": border,
+            "--borderColor-muted": mutedBorder,
+            "--borderColor-neutral-muted": mutedBorder
+        ]
+        return surface.merging(paletteVariables) { _, palette in palette }
+    }
+
+    static func resolve(
+        backgroundColor: NSColor,
+        foregroundColor: NSColor? = nil,
+        palette: [Int: NSColor] = [:]
+    ) -> MarkdownWebTheme {
         let base = backgroundColor.markdownOpaqueSRGB
         let isDark = !base.isLightColor
         let overlayColor: NSColor = isDark ? .white : .black
@@ -413,8 +437,64 @@ struct MarkdownWebTheme: Equatable {
             mutedBackground: muted.markdownCSSColor,
             neutralMutedBackground: neutralMuted.markdownCSSColor,
             border: border.markdownCSSColor,
-            mutedBorder: border.withAlphaComponent(border.alphaComponent * 0.70).markdownCSSColor
+            mutedBorder: border.withAlphaComponent(border.alphaComponent * 0.70).markdownCSSColor,
+            paletteVariables: foregroundColor.map {
+                terminalPaletteVariables(background: base, foreground: $0, palette: palette)
+            } ?? [:]
         )
+    }
+
+    /// ANSI slots are picked by hue so the GitHub design keeps its meaning
+    /// (red keywords, green tags, blue links) in the terminal's own colors.
+    /// A slot that reads poorly on the background is blended toward the
+    /// foreground until it clears the contrast floor rather than dropped.
+    private static func terminalPaletteVariables(
+        background: NSColor,
+        foreground: NSColor,
+        palette: [Int: NSColor]
+    ) -> [String: String] {
+        guard !palette.isEmpty else { return [:] }
+        let fg = foreground.markdownOpaqueSRGB
+        let muted = (fg.blended(withFraction: 0.4, of: background) ?? fg)
+            .markdownEnsuringContrast(4.5, against: background, towards: fg)
+
+        func slot(_ index: Int, minimumContrast: Double = 3) -> NSColor? {
+            palette[index]?.markdownEnsuringContrast(minimumContrast, against: background, towards: fg)
+        }
+
+        var variables = [
+            "--fgColor-default": fg.markdownCSSColor,
+            "--fgColor-muted": muted.markdownCSSColor,
+            "--cmux-terminal-background": background.markdownCSSColor,
+            "--cmux-ansi-comment": (slot(8) ?? muted).markdownCSSColor,
+            // Mermaid derives its shades from solid colors, so diagram fills
+            // are pre-blended instead of reusing the translucent overlays.
+            "--cmux-diagram-fill": (background.blended(withFraction: 0.12, of: fg) ?? background).markdownCSSColor,
+            "--cmux-diagram-fill-alt": (background.blended(withFraction: 0.22, of: fg) ?? background).markdownCSSColor
+        ]
+        let roles: [(index: Int, names: [String])] = [
+            (1, ["--fgColor-danger", "--borderColor-danger-emphasis", "--cmux-ansi-red"]),
+            (2, ["--fgColor-success", "--borderColor-success-emphasis", "--cmux-ansi-green"]),
+            (3, ["--fgColor-attention", "--borderColor-attention-emphasis", "--cmux-ansi-yellow"]),
+            (4, ["--borderColor-accent-emphasis", "--focus-outlineColor", "--cmux-ansi-blue"]),
+            (5, ["--fgColor-done", "--borderColor-done-emphasis", "--cmux-ansi-magenta"]),
+            (6, ["--cmux-ansi-cyan"])
+        ]
+        for role in roles {
+            guard let color = slot(role.index) else { continue }
+            for name in role.names {
+                variables[name] = color.markdownCSSColor
+            }
+        }
+        // Links are body text, so they get the stricter text contrast floor.
+        if let accent = slot(4, minimumContrast: 4.5) {
+            variables["--fgColor-accent"] = accent.markdownCSSColor
+            variables["--cmux-selection-background"] = accent.withAlphaComponent(0.4).markdownCSSColor
+        }
+        if let attention = slot(3) {
+            variables["--bgColor-attention-muted"] = attention.withAlphaComponent(0.15).markdownCSSColor
+        }
+        return variables
     }
 }
 
@@ -506,6 +586,34 @@ extension NSColor {
         }
 
         return overlay.withAlphaComponent(result)
+    }
+
+    /// Returns this color unchanged when it already reaches `minimumContrast`
+    /// on `background`; otherwise the least blend toward `target` that does,
+    /// or `target` itself when no blend is enough.
+    func markdownEnsuringContrast(
+        _ minimumContrast: Double,
+        against background: NSColor,
+        towards target: NSColor
+    ) -> NSColor {
+        let color = markdownOpaqueSRGB
+        let base = background.markdownOpaqueSRGB
+        guard color.markdownContrastRatio(with: base) < minimumContrast else { return color }
+        let goal = target.markdownOpaqueSRGB
+        var low: CGFloat = 0
+        var high: CGFloat = 1
+
+        for _ in 0..<18 {
+            let mid = (low + high) / 2
+            let candidate = color.blended(withFraction: mid, of: goal) ?? goal
+            if candidate.markdownContrastRatio(with: base) < minimumContrast {
+                low = mid
+            } else {
+                high = mid
+            }
+        }
+
+        return color.blended(withFraction: high, of: goal) ?? goal
     }
 
     var markdownRelativeLuminance: Double {
