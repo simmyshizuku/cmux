@@ -19270,6 +19270,13 @@ private extension NSWindow {
            searchField.handleEditingKeyEquivalent(event) {
             return true
         }
+        if let editor = firstResponder as? NSTextView,
+           editor.isFieldEditor,
+           let field = editor.delegate as? NSTextField,
+           let findBar = FilePreviewFindBarView.enclosing(field),
+           findBar.handleEditingKeyEquivalent(event) {
+            return true
+        }
         let browserWebKitKeyDownReentry = firstResponderWebView?.browserNativeInputDeliveryOwner.isDispatchActive ?? false
         let shouldBypassPrintableOptionText = shortcutRoutingShouldBypassForPrintableOptionText(event: event)
         // AppKit can send Option-only keys through a text/terminal fast path

@@ -155,7 +155,31 @@ final class FilePreviewFindBarView: NSView, NSTextFieldDelegate {
         guard let responder = window?.firstResponder as? NSView, responder.isDescendant(of: self) else {
             return super.performKeyEquivalent(with: event)
         }
-        return handleFindKeyEquivalent(event) || super.performKeyEquivalent(with: event)
+        return handleEditingKeyEquivalent(event)
+            || handleFindKeyEquivalent(event)
+            || super.performKeyEquivalent(with: event)
+    }
+
+    /// The find bar containing `view`, if any.
+    static func enclosing(_ view: NSView) -> FilePreviewFindBarView? {
+        var current = view.superview
+        while let candidate = current {
+            if let findBar = candidate as? FilePreviewFindBarView {
+                return findBar
+            }
+            current = candidate.superview
+        }
+        return nil
+    }
+
+    /// ⌘A / ⌘C / ⌘X / ⌘V in the query or replace field, performed on its field
+    /// editor before a hosting view can swallow them.
+    func handleEditingKeyEquivalent(_ event: NSEvent) -> Bool {
+        guard let editor = window?.firstResponder as? NSTextView,
+              editor.isFieldEditor,
+              let field = editor.delegate as? NSTextField,
+              field === queryField || field === replaceField else { return false }
+        return editor.cmuxPerformStandardEditingKeyEquivalent(event)
     }
 
     // MARK: - Field delegate
