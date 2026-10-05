@@ -3,6 +3,7 @@ import CmuxAppKitSupportUI
 import CmuxCommandPalette
 import CmuxCore
 import CmuxFeedback
+import CmuxFilePreviewCore
 import CmuxFoundation
 import CmuxNotifications
 import CmuxPanes
@@ -2010,6 +2011,9 @@ struct ContentView: View {
             onOpenFilePreview: { filePath in
                 openFilePreviewFromSidebar(filePath: filePath)
             },
+            onOpenFilePreviewAtLocation: { filePath, location in
+                openFilePreviewFromSidebar(filePath: filePath, location: location)
+            },
             onOpenAsPane: { mode in
                 openRightSidebarToolPane(mode)
             },
@@ -2442,7 +2446,7 @@ struct ContentView: View {
         _ = workspace.openOrFocusRightSidebarToolSurface(inPane: paneId, mode: mode, focus: true)
     }
 
-    private func openFilePreviewFromSidebar(filePath: String) {
+    private func openFilePreviewFromSidebar(filePath: String, location: FilePreviewTextLocation? = nil) {
         guard let workspace = tabManager.selectedWorkspace else { return }
         guard let paneId = workspace.bonsplitController.focusedPaneId ?? workspace.bonsplitController.allPaneIds.first else {
             return
@@ -2454,26 +2458,32 @@ struct ContentView: View {
                 guard let workspace else { return }
                 do {
                     let localURL = try await fileExplorerStore.materializeRemoteFileForPreview(path: filePath)
-                    _ = workspace.openFileSurfaces(
+                    let panels = workspace.openFileSurfaces(
                         inPane: paneId,
                         filePaths: [localURL.path],
                         focus: true,
                         reuseExisting: true,
                         duplicateWhenFocused: true
                     )
+                    if let location, let preview = panels.first as? FilePreviewPanel {
+                        preview.revealTextLocation(location)
+                    }
                 } catch {
                     NSSound.beep()
                 }
             }
             return
         }
-        _ = workspace.openFileSurfaces(
+        let panels = workspace.openFileSurfaces(
             inPane: paneId,
             filePaths: [filePath],
             focus: true,
             reuseExisting: true,
             duplicateWhenFocused: true
         )
+        if let location, let preview = panels.first as? FilePreviewPanel {
+            preview.revealTextLocation(location)
+        }
     }
 
     private func syncFileExplorerDirectory() {

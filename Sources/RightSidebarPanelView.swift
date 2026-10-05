@@ -2,6 +2,7 @@ import AppKit
 import Bonsplit
 import CMUXAgentLaunch
 import CmuxAppKitSupportUI
+import CmuxFilePreviewCore
 import CmuxFoundation
 import CmuxSettings
 import CmuxSettingsUI
@@ -71,6 +72,7 @@ struct RightSidebarPanelView: View {
     let onResumeSession: ((SessionEntry) -> Void)?
     let onOpenSession: ((SessionEntry) -> Void)?
     let onOpenFilePreview: (String) -> Void
+    var onOpenFilePreviewAtLocation: ((String, FilePreviewTextLocation) -> Void)? = nil
     let onOpenAsPane: (RightSidebarMode) -> Void
     let onClose: () -> Void
     /// Live data context for the Custom mode's JS/Swift sidebar (built by the
@@ -431,14 +433,16 @@ struct RightSidebarPanelView: View {
                     store: fileExplorerStore,
                     state: fileExplorerState,
                     onOpenFilePreview: onOpenFilePreview,
-                    presentation: .files
+                    presentation: .files,
+                    onOpenFilePreviewAtLocation: onOpenFilePreviewAtLocation
                 )
             case .find:
                 FileExplorerPanelView(
                     store: fileExplorerStore,
                     state: fileExplorerState,
                     onOpenFilePreview: onOpenFilePreview,
-                    presentation: .find
+                    presentation: .find,
+                    onOpenFilePreviewAtLocation: onOpenFilePreviewAtLocation
                 )
             case .sessions:
                 SessionIndexView(

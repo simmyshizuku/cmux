@@ -6,8 +6,14 @@ struct FileSearchResult: Equatable, Sendable {
     let path: String
     let relativePath: String
     let lineNumber: Int
+    /// One-based column in UTF-16 units, the unit the File Preview editor uses.
     let columnNumber: Int
     let preview: String
+
+    /// Where to put the caret when opening this result in File Preview.
+    var textLocation: FilePreviewTextLocation? {
+        FilePreviewTextLocation(line: lineNumber, column: columnNumber)
+    }
 }
 
 enum FileSearchRipgrepParser {
@@ -26,7 +32,7 @@ enum FileSearchRipgrepParser {
 
         let submatches = payload["submatches"] as? [[String: Any]]
         let firstStart = submatches?.first?["start"] as? Int
-        let columnNumber = (firstStart ?? 0) + 1
+        let columnNumber = utf16Offset(forUTF8Offset: firstStart ?? 0, in: lineText) + 1
         return FileSearchResult(
             path: path,
             relativePath: FileExplorerTerminalPathInsertion.relativePath(for: path, rootPath: rootPath),
@@ -34,6 +40,18 @@ enum FileSearchRipgrepParser {
             columnNumber: columnNumber,
             preview: lineText.trimmingCharacters(in: .whitespacesAndNewlines)
         )
+    }
+
+    /// ripgrep reports match offsets in bytes; the editor counts UTF-16 units,
+    /// which differ for non-ASCII text such as Japanese.
+    static func utf16Offset(forUTF8Offset offset: Int, in line: String) -> Int {
+        let utf8 = line.utf8
+        guard offset > 0,
+              let byteIndex = utf8.index(utf8.startIndex, offsetBy: offset, limitedBy: utf8.endIndex),
+              let index = String.Index(byteIndex, within: line.utf16) else {
+            return max(0, offset)
+        }
+        return line.utf16.distance(from: line.utf16.startIndex, to: index)
     }
 
     private static func payloadString(from object: [String: Any]) -> String? {

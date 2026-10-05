@@ -1,4 +1,5 @@
 import AppKit
+import CmuxFilePreviewCore
 import CmuxSettings
 import Foundation
 import Testing
@@ -9,7 +10,6 @@ private typealias StoredShortcut = cmux_DEV.StoredShortcut
 private typealias ShortcutStroke = cmux_DEV.ShortcutStroke
 #elseif canImport(cmux)
 @testable import cmux
-import CmuxFilePreviewCore
 private typealias StoredShortcut = cmux.StoredShortcut
 private typealias ShortcutStroke = cmux.ShortcutStroke
 #endif

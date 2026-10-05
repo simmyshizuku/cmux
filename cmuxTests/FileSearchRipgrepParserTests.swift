@@ -1,4 +1,5 @@
 import AppKit
+import CmuxFilePreviewCore
 import Testing
 import XCTest
 
@@ -6,7 +7,6 @@ import XCTest
 @testable import cmux_DEV
 #elseif canImport(cmux)
 @testable import cmux
-import CmuxFilePreviewCore
 #endif
 
 final class FileSearchRipgrepParserTests: XCTestCase {
@@ -22,6 +22,27 @@ final class FileSearchRipgrepParserTests: XCTestCase {
         XCTAssertEqual(result?.lineNumber, 42)
         XCTAssertEqual(result?.columnNumber, 14)
         XCTAssertEqual(result?.preview, "let title = \"Search files\"")
+    }
+
+    func testParseMatchLineConvertsByteOffsetToEditorColumn() throws {
+        // "日本語 " is 10 UTF-8 bytes but 4 UTF-16 units, so ripgrep's byte
+        // start 10 must become editor column 5, and the location jumps there.
+        let object: [String: Any] = [
+            "type": "match",
+            "data": [
+                "path": ["text": "/tmp/project/Notes.txt"],
+                "lines": ["text": "日本語 search\n"],
+                "line_number": 3,
+                "submatches": [["match": ["text": "search"], "start": 10, "end": 16]],
+            ],
+        ]
+        let line = String(decoding: try JSONSerialization.data(withJSONObject: object), as: UTF8.self)
+
+        let result = try XCTUnwrap(FileSearchRipgrepParser.parseMatchLine(line, rootPath: "/tmp/project"))
+
+        XCTAssertEqual(result.columnNumber, 5)
+        XCTAssertEqual(result.textLocation?.line, 3)
+        XCTAssertEqual(result.textLocation?.column, 5)
     }
 
     func testParseMatchLineAcceptsBytesPayloads() throws {

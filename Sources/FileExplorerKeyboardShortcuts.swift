@@ -1,4 +1,5 @@
 import AppKit
+import CmuxFilePreviewCore
 import CmuxSettings
 import CmuxWorkspaces
 
@@ -50,6 +51,16 @@ func performFileExplorerFileOpen(path: String, onOpenFilePreview: (String) -> Vo
 
 @MainActor
 extension FileExplorerPanelView.Coordinator {
+    /// Opens `path` in File Preview, placing the caret at `location` when the
+    /// host supports it (Find in Directory results jump to their match).
+    func openFilePreview(path: String, location: FilePreviewTextLocation?) {
+        if let location, let onOpenFilePreviewAtLocation {
+            onOpenFilePreviewAtLocation(path, location)
+        } else {
+            onOpenFilePreview(path)
+        }
+    }
+
     func openSelectedNode(in outlineView: NSOutlineView) {
         guard let row = resolvedSelectionRow(in: outlineView) else { return }
         openNode(in: outlineView, at: row)

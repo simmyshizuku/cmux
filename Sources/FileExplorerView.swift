@@ -44,6 +44,9 @@ struct FileExplorerPanelView: NSViewRepresentable {
     var placement: FileExplorerPanelPlacement = .rightSidebar
     var onFocus: (() -> Void)?
     var onContainerChange: ((FileExplorerContainerView?) -> Void)?
+    /// Opens a file in File Preview with the caret at a line (Find in
+    /// Directory results). Falls back to ``onOpenFilePreview`` when nil.
+    var onOpenFilePreviewAtLocation: ((String, FilePreviewTextLocation) -> Void)?
     @Environment(\.colorScheme) private var colorScheme
 
     func makeCoordinator() -> Coordinator {
@@ -53,7 +56,8 @@ struct FileExplorerPanelView: NSViewRepresentable {
             onOpenFilePreview: onOpenFilePreview,
             placement: placement,
             onFocus: onFocus,
-            onContainerChange: onContainerChange
+            onContainerChange: onContainerChange,
+            onOpenFilePreviewAtLocation: onOpenFilePreviewAtLocation
         )
     }
 
@@ -70,6 +74,7 @@ struct FileExplorerPanelView: NSViewRepresentable {
         context.coordinator.store = store
         context.coordinator.state = state
         context.coordinator.onOpenFilePreview = onOpenFilePreview
+        context.coordinator.onOpenFilePreviewAtLocation = onOpenFilePreviewAtLocation
         context.coordinator.placement = placement
         context.coordinator.onFocus = onFocus
         context.coordinator.onContainerChange = onContainerChange
@@ -97,6 +102,7 @@ struct FileExplorerPanelView: NSViewRepresentable {
         var store: FileExplorerStore
         var state: FileExplorerState
         var onOpenFilePreview: (String) -> Void
+        var onOpenFilePreviewAtLocation: ((String, FilePreviewTextLocation) -> Void)?
         var placement: FileExplorerPanelPlacement
         var onFocus: (() -> Void)?
         var onContainerChange: ((FileExplorerContainerView?) -> Void)?
@@ -123,11 +129,13 @@ struct FileExplorerPanelView: NSViewRepresentable {
             onOpenFilePreview: @escaping (String) -> Void,
             placement: FileExplorerPanelPlacement = .rightSidebar,
             onFocus: (() -> Void)? = nil,
-            onContainerChange: ((FileExplorerContainerView?) -> Void)? = nil
+            onContainerChange: ((FileExplorerContainerView?) -> Void)? = nil,
+            onOpenFilePreviewAtLocation: ((String, FilePreviewTextLocation) -> Void)? = nil
         ) {
             self.store = store
             self.state = state
             self.onOpenFilePreview = onOpenFilePreview
+            self.onOpenFilePreviewAtLocation = onOpenFilePreviewAtLocation
             self.placement = placement
             self.onFocus = onFocus
             self.onContainerChange = onContainerChange
@@ -1760,14 +1768,17 @@ final class FileExplorerContainerView: NSView {
     fileprivate func openSelectedSearchResult() {
         let row = searchResultsView.selectedRow
         guard row >= 0, row < searchSnapshot.results.count else { return }
-        let path = searchSnapshot.results[row].path
+        let result = searchSnapshot.results[row]
+        let openPreviewAtMatch: (String) -> Void = { [coordinator] path in
+            coordinator.openFilePreview(path: path, location: result.textLocation)
+        }
         // Editor/preferred-editor actions operate on local file paths via
         // NSWorkspace; for non-local providers fall back to the cmux preview.
         guard coordinator.store.provider is LocalFileExplorerProvider else {
-            coordinator.onOpenFilePreview(path)
+            openPreviewAtMatch(result.path)
             return
         }
-        performFileExplorerFileOpen(path: path, onOpenFilePreview: coordinator.onOpenFilePreview)
+        performFileExplorerFileOpen(path: result.path, onOpenFilePreview: openPreviewAtMatch)
     }
 
     @objc private func openSelectedSearchResultFromTable(_ sender: NSTableView) {
@@ -1776,7 +1787,7 @@ final class FileExplorerContainerView: NSView {
 
     @objc private func contextMenuOpenSearchResultInCmux(_ sender: NSMenuItem) {
         guard let result = searchResult(forMenuItem: sender) else { return }
-        coordinator.onOpenFilePreview(result.path)
+        coordinator.openFilePreview(path: result.path, location: result.textLocation)
     }
 
     @objc private func contextMenuOpenSearchResultExternally(_ sender: NSMenuItem) {

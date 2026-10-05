@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import CmuxAppKitSupportUI
 import CmuxCloudMachines
+import CmuxFilePreviewCore
 import SwiftUI
 
 @MainActor
@@ -89,7 +90,7 @@ final class RightSidebarToolPanel: Panel, ObservableObject {
         }
     }
 
-    func openFilePreview(_ filePath: String) {
+    func openFilePreview(_ filePath: String, location: FilePreviewTextLocation? = nil) {
         guard let workspace,
               let paneId = workspace.bonsplitController.focusedPaneId ?? workspace.bonsplitController.allPaneIds.first else {
             return
@@ -100,26 +101,32 @@ final class RightSidebarToolPanel: Panel, ObservableObject {
                 guard let workspace, let store else { return }
                 do {
                     let localURL = try await store.materializeRemoteFileForPreview(path: filePath)
-                    _ = workspace.openFileSurfaces(
+                    let panels = workspace.openFileSurfaces(
                         inPane: paneId,
                         filePaths: [localURL.path],
                         focus: true,
                         reuseExisting: true,
                         duplicateWhenFocused: true
                     )
+                    if let location, let preview = panels.first as? FilePreviewPanel {
+                        preview.revealTextLocation(location)
+                    }
                 } catch {
                     NSSound.beep()
                 }
             }
             return
         }
-        _ = workspace.openFileSurfaces(
+        let panels = workspace.openFileSurfaces(
             inPane: paneId,
             filePaths: [filePath],
             focus: true,
             reuseExisting: true,
             duplicateWhenFocused: true
         )
+        if let location, let preview = panels.first as? FilePreviewPanel {
+            preview.revealTextLocation(location)
+        }
     }
 
     var isFocusedInWorkspace: Bool {
@@ -271,21 +278,23 @@ struct RightSidebarToolPanelView: View {
             FileExplorerPanelView(
                 store: panel.fileExplorerStore,
                 state: panel.fileExplorerState,
-                onOpenFilePreview: panel.openFilePreview,
+                onOpenFilePreview: { panel.openFilePreview($0) },
                 presentation: .files,
                 placement: .pane,
                 onFocus: requestPanelFocusIfNeeded,
-                onContainerChange: panel.attachFileExplorerContainer
+                onContainerChange: panel.attachFileExplorerContainer,
+                onOpenFilePreviewAtLocation: { panel.openFilePreview($0, location: $1) }
             )
         case .find:
             FileExplorerPanelView(
                 store: panel.fileExplorerStore,
                 state: panel.fileExplorerState,
-                onOpenFilePreview: panel.openFilePreview,
+                onOpenFilePreview: { panel.openFilePreview($0) },
                 presentation: .find,
                 placement: .pane,
                 onFocus: requestPanelFocusIfNeeded,
-                onContainerChange: panel.attachFileExplorerContainer
+                onContainerChange: panel.attachFileExplorerContainer,
+                onOpenFilePreviewAtLocation: { panel.openFilePreview($0, location: $1) }
             )
         case .sessions:
             SessionIndexView(
