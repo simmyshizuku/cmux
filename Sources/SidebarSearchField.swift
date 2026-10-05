@@ -12,15 +12,27 @@ class SidebarSearchField: NSSearchField {
     var onCommandSubmit: (() -> Void)?
     private var hoverTrackingArea: NSTrackingArea?
 
-    /// Width kept clear at the trailing edge for accessory controls placed
-    /// inside the bezel (Find's `Aa` / `ab` / `.*` toggles). The text and the
-    /// clear button end before it.
-    var trailingAccessoryInset: CGFloat = 0 {
+    /// Controls shown inside the bezel just before the clear button (Find's
+    /// `Aa` / `ab` / `.*` toggles). The clear button keeps its native place at
+    /// the trailing edge; the text ends before the accessory.
+    var trailingAccessoryView: NSView? {
         didSet {
+            guard trailingAccessoryView !== oldValue else { return }
+            oldValue?.removeFromSuperview()
+            if let trailingAccessoryView {
+                trailingAccessoryView.translatesAutoresizingMaskIntoConstraints = true
+                addSubview(trailingAccessoryView)
+            }
             needsLayout = true
             needsDisplay = true
             window?.invalidateCursorRects(for: self)
         }
+    }
+
+    /// Width the text gives up to ``trailingAccessoryView``.
+    var trailingAccessoryInset: CGFloat {
+        guard let trailingAccessoryView else { return 0 }
+        return trailingAccessoryView.fittingSize.width + 2
     }
 
     override class var cellClass: AnyClass? {
@@ -54,8 +66,16 @@ class SidebarSearchField: NSSearchField {
         insetForTrailingAccessory(Self.alignedSearchTextRect(super.searchTextBounds, in: bounds))
     }
 
-    override var cancelButtonBounds: NSRect {
-        super.cancelButtonBounds.offsetBy(dx: -trailingAccessoryInset, dy: 0)
+    override func layout() {
+        super.layout()
+        guard let trailingAccessoryView else { return }
+        let size = trailingAccessoryView.fittingSize
+        trailingAccessoryView.frame = NSRect(
+            x: cancelButtonBounds.minX - size.width,
+            y: ((bounds.height - size.height) / 2).rounded(),
+            width: size.width,
+            height: size.height
+        )
     }
 
     func insetForTrailingAccessory(_ rect: NSRect) -> NSRect {

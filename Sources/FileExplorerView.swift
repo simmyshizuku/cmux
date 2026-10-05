@@ -1005,8 +1005,7 @@ final class FileExplorerContainerView: NSView {
             self.refreshSearchIfNeeded()
         }
         searchBarView.addSubview(searchField)
-        searchField.addSubview(searchOptionToggles)
-        searchField.trailingAccessoryInset = searchOptionToggles.fittingSize.width + 4
+        searchField.trailingAccessoryView = searchOptionToggles
 
         searchStatusLabel.translatesAutoresizingMaskIntoConstraints = false
         searchStatusLabel.textColor = .secondaryLabelColor
@@ -1159,9 +1158,6 @@ final class FileExplorerContainerView: NSView {
             searchField.topAnchor.constraint(equalTo: searchBarView.topAnchor, constant: SidebarSearchField.topPadding),
             searchFieldHeightConstraint,
             searchField.widthAnchor.constraint(greaterThanOrEqualToConstant: 120),
-
-            searchOptionToggles.trailingAnchor.constraint(equalTo: searchField.trailingAnchor, constant: -2),
-            searchOptionToggles.centerYAnchor.constraint(equalTo: searchField.centerYAnchor),
 
             searchStatusLabel.leadingAnchor.constraint(equalTo: searchField.leadingAnchor, constant: 4),
             searchStatusLabel.trailingAnchor.constraint(equalTo: searchField.trailingAnchor),
