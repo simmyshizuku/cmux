@@ -660,7 +660,7 @@ struct FileSearchControllerTests {
         var snapshots: [FileSearchSnapshot] = []
         controller.onSnapshotChanged = { snapshots.append($0) }
 
-        controller.search(query: "needle", rootPath: rootURL.path, isLocal: true)
+        controller.search(query: "needle", options: TextSearchOptions(), rootPath: rootURL.path, isLocal: true)
         let finalSnapshot = try await waitForSettledSearchSnapshot { snapshots.last }
 
         #expect(finalSnapshot.status == .matches)
@@ -704,7 +704,7 @@ struct FileSearchControllerTests {
         var snapshots: [FileSearchSnapshot] = []
         controller.onSnapshotChanged = { snapshots.append($0) }
 
-        controller.search(query: "issue3817Token", rootPath: rootURL.path, isLocal: true)
+        controller.search(query: "issue3817Token", options: TextSearchOptions(), rootPath: rootURL.path, isLocal: true)
         let finalSnapshot = try await waitForSettledSearchSnapshot { snapshots.last }
 
         #expect(finalSnapshot.status == .matches)
@@ -731,7 +731,7 @@ struct FileSearchControllerTests {
         var snapshots: [FileSearchSnapshot] = []
         controller.onSnapshotChanged = { snapshots.append($0) }
 
-        controller.search(query: "needle", rootPath: rootURL.path, isLocal: true)
+        controller.search(query: "needle", options: TextSearchOptions(), rootPath: rootURL.path, isLocal: true)
         let finalSnapshot = try await waitForSettledSearchSnapshot { snapshots.last }
 
         #expect(finalSnapshot.status == .limited(500))
@@ -749,7 +749,7 @@ struct FileSearchControllerTests {
         var snapshots: [FileSearchSnapshot] = []
         controller.onSnapshotChanged = { snapshots.append($0) }
 
-        controller.search(query: "needle", rootPath: rootURL.path, isLocal: true, contentRevision: 1)
+        controller.search(query: "needle", options: TextSearchOptions(), rootPath: rootURL.path, isLocal: true, contentRevision: 1)
         let emptySnapshot = try await waitForSettledSearchSnapshot { snapshots.last }
         #expect(emptySnapshot.status == .noMatches)
 
@@ -759,7 +759,7 @@ struct FileSearchControllerTests {
             encoding: .utf8
         )
 
-        controller.search(query: "needle", rootPath: rootURL.path, isLocal: true, contentRevision: 2)
+        controller.search(query: "needle", options: TextSearchOptions(), rootPath: rootURL.path, isLocal: true, contentRevision: 2)
         let refreshedSnapshot = try await waitForSettledSearchSnapshot { snapshots.last }
 
         #expect(refreshedSnapshot.status == .matches)
@@ -780,13 +780,13 @@ struct FileSearchControllerTests {
         var snapshots: [FileSearchSnapshot] = []
         controller.onSnapshotChanged = { snapshots.append($0) }
 
-        controller.search(query: "needle", rootPath: rootURL.path, isLocal: true, contentRevision: 1)
+        controller.search(query: "needle", options: TextSearchOptions(), rootPath: rootURL.path, isLocal: true, contentRevision: 1)
         let emptySnapshot = try await waitForSettledSearchSnapshot { snapshots.last }
         #expect(emptySnapshot.status == .noMatches)
 
         try "fresh needle\n".write(to: fileURL, atomically: true, encoding: .utf8)
 
-        controller.search(query: "needle", rootPath: rootURL.path, isLocal: true, contentRevision: 1)
+        controller.search(query: "needle", options: TextSearchOptions(), rootPath: rootURL.path, isLocal: true, contentRevision: 1)
         let refreshedSnapshot = try await waitForSettledSearchSnapshot { snapshots.last }
 
         #expect(refreshedSnapshot.status == .matches)

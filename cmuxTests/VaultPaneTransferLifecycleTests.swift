@@ -52,12 +52,14 @@ struct VaultPaneTransferLifecycleTests {
                 from: paneID
             )
             let registry = fixture.appDelegate.tabDragTransferRegistry
-            let registration = try #require(registry.register(TabDragTransfer(
+            let transfer = TabDragTransfer(
                 tab: Tab(from: sourceTab),
                 sourcePaneId: paneID
-            )))
+            )
+            let registration = try #require(registry.register(transfer))
             let source = TabDragSessionSource(
                 generation: generation,
+                transfer: transfer,
                 transferRegistration: registration,
                 transferRegistry: registry,
                 controller: controller.internalController
