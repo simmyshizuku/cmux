@@ -108,7 +108,10 @@ struct FileExplorerPanelView: NSViewRepresentable {
         var onContainerChange: ((FileExplorerContainerView?) -> Void)?
         weak var containerView: FileExplorerContainerView?
         weak var outlineView: NSOutlineView?
-        private var lastRootNodeCount: Int = -1
+        /// The root nodes the outline last loaded. Compared by identity so a
+        /// same-sized change (a rename, or one file replacing another) reloads.
+        private var lastRootNodeIdentities: [ObjectIdentifier]?
+        private var lastGitStatusByPath: [String: GitFileStatus] = [:]
         private var observationCancellable: AnyCancellable?
         private var styleObserver: Any?
         private var isUpdatingOutlineProgrammatically = false
@@ -208,18 +211,33 @@ struct FileExplorerPanelView: NSViewRepresentable {
                 statusMessage: store.rootStatusMessage
             )
 
-            let newCount = store.rootNodes.count
+            let rootNodeIdentities = store.rootNodes.map { ObjectIdentifier($0) }
             withProgrammaticOutlineUpdate {
-                if newCount != lastRootNodeCount {
-                    lastRootNodeCount = newCount
+                if rootNodeIdentities != lastRootNodeIdentities {
+                    lastRootNodeIdentities = rootNodeIdentities
                     let expandedPaths = store.expandedPaths
                     outlineView.reloadData()
                     restoreExpansionState(expandedPaths, in: outlineView)
                 } else {
                     refreshLoadedNodes(in: outlineView)
                 }
+                if store.gitStatusByPath != lastGitStatusByPath {
+                    lastGitStatusByPath = store.gitStatusByPath
+                    reloadVisibleRows(in: outlineView)
+                }
                 applyStoredSelection(in: outlineView, fallbackToFirstVisible: false, scroll: false)
             }
+        }
+
+        /// Reconfigures the rows on screen. Rows that kept their node across a
+        /// change are not otherwise redrawn, so a new git status would not show.
+        private func reloadVisibleRows(in outlineView: NSOutlineView) {
+            let visibleRows = outlineView.rows(in: outlineView.visibleRect)
+            guard visibleRows.length > 0 else { return }
+            outlineView.reloadData(
+                forRowIndexes: IndexSet(integersIn: visibleRows.location..<NSMaxRange(visibleRows)),
+                columnIndexes: IndexSet(integer: 0)
+            )
         }
 
         private func restoreExpansionState(_ expandedPaths: Set<String>, in outlineView: NSOutlineView) {

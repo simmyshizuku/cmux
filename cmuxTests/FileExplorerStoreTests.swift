@@ -1,5 +1,6 @@
 import AppKit
 import CmuxFilePreviewCore
+import CmuxFoundation
 import Testing
 
 #if canImport(cmux_DEV)
@@ -615,6 +616,165 @@ struct FileExplorerStoreTests {
         let node = FileExplorerNode(name: "file.txt", path: "/project/file.txt", isDirectory: false)
         store.expand(node: node)
         #expect(!(store.isExpanded(node)))
+    }
+
+    // MARK: - Filesystem changes
+
+    private static let changeRoot = "/home/user/project"
+
+    /// A loaded root holding an expanded `src` folder (one file) and a README.
+    private func makeLoadedTree(
+        provider: MockFileExplorerProvider
+    ) async throws -> (store: FileExplorerStore, src: FileExplorerNode, scope: FileExplorerChangeScope) {
+        let root = Self.changeRoot
+        provider.listings[root] = .success([
+            FileExplorerEntry(name: "src", path: "\(root)/src", isDirectory: true),
+            FileExplorerEntry(name: "README.md", path: "\(root)/README.md", isDirectory: false),
+        ])
+        provider.listings["\(root)/src"] = .success([
+            FileExplorerEntry(name: "main.swift", path: "\(root)/src/main.swift", isDirectory: false),
+        ])
+
+        let store = FileExplorerStore()
+        store.setProviderForTesting(provider)
+        store.setRootPath(root)
+        try await waitFor("root nodes loaded") { store.rootNodes.count == 2 }
+        let src = store.rootNodes[0]
+        store.expand(node: src)
+        try await waitFor("src children loaded") { src.children?.count == 1 }
+        return (store, src, FileExplorerChangeScope(rootPath: root, resolvedRootPath: root))
+    }
+
+    @Test
+    func testFileAddedInExpandedSubfolderAppearsWithoutRebuildingTheTree() async throws {
+        let provider = MockFileExplorerProvider()
+        let (store, src, scope) = try await makeLoadedTree(provider: provider)
+        let root = Self.changeRoot
+        let main = try #require(src.children?.first)
+        let readme = store.rootNodes[1]
+        store.select(node: main)
+
+        provider.listings["\(root)/src"] = .success([
+            FileExplorerEntry(name: "main.swift", path: "\(root)/src/main.swift", isDirectory: false),
+            FileExplorerEntry(name: "new.swift", path: "\(root)/src/new.swift", isDirectory: false),
+        ])
+        store.applyFilesystemChange(RecursivePathChange(paths: ["\(root)/src/new.swift"]), scope: scope)
+        try await waitFor("new file listed") { src.children?.count == 2 }
+
+        #expect(src.children?.map(\.name) == ["main.swift", "new.swift"])
+        #expect(src.children?.first === main)
+        #expect(store.rootNodes.count == 2)
+        #expect(store.rootNodes[0] === src)
+        #expect(store.rootNodes[1] === readme)
+        #expect(store.isExpanded(src))
+        #expect(store.selectedPath == main.path)
+        #expect(!store.isRootLoading)
+    }
+
+    @Test
+    func testDeletedRootFileIsRemovedAndSiblingsKeepTheirNodes() async throws {
+        let provider = MockFileExplorerProvider()
+        let (store, src, scope) = try await makeLoadedTree(provider: provider)
+        let root = Self.changeRoot
+
+        provider.listings[root] = .success([
+            FileExplorerEntry(name: "src", path: "\(root)/src", isDirectory: true),
+        ])
+        store.applyFilesystemChange(RecursivePathChange(paths: ["\(root)/README.md"]), scope: scope)
+        try await waitFor("deleted file removed") { store.rootNodes.count == 1 }
+
+        #expect(store.rootNodes[0] === src)
+        #expect(src.children?.count == 1)
+    }
+
+    @Test
+    func testRenamedRootFileReplacesOnlyItsOwnNode() async throws {
+        let provider = MockFileExplorerProvider()
+        let (store, src, scope) = try await makeLoadedTree(provider: provider)
+        let root = Self.changeRoot
+        let readme = store.rootNodes[1]
+
+        provider.listings[root] = .success([
+            FileExplorerEntry(name: "src", path: "\(root)/src", isDirectory: true),
+            FileExplorerEntry(name: "NOTES.md", path: "\(root)/NOTES.md", isDirectory: false),
+        ])
+        store.applyFilesystemChange(
+            RecursivePathChange(paths: ["\(root)/README.md", "\(root)/NOTES.md"]),
+            scope: scope
+        )
+        try await waitFor("renamed file listed") { store.rootNodes.last?.name == "NOTES.md" }
+
+        #expect(store.rootNodes.count == 2)
+        #expect(store.rootNodes[0] === src)
+        #expect(store.rootNodes[1] !== readme)
+    }
+
+    @Test
+    func testRemovedExpandedFolderIsDroppedFromTheTree() async throws {
+        let provider = MockFileExplorerProvider()
+        let (store, _, scope) = try await makeLoadedTree(provider: provider)
+        let root = Self.changeRoot
+
+        provider.listings[root] = .success([
+            FileExplorerEntry(name: "README.md", path: "\(root)/README.md", isDirectory: false),
+        ])
+        provider.listings["\(root)/src"] = .failure(FileExplorerError.providerUnavailable)
+        store.applyFilesystemChange(
+            RecursivePathChange(paths: ["\(root)/src", "\(root)/src/main.swift"]),
+            scope: scope
+        )
+        try await waitFor("removed folder dropped") { store.rootNodes.map(\.name) == ["README.md"] }
+
+        #expect(store.rootStatusMessage == nil)
+    }
+
+    @Test
+    func testChangeInsideUnloadedFolderDoesNotListIt() async throws {
+        let provider = MockFileExplorerProvider()
+        let (store, _, scope) = try await makeLoadedTree(provider: provider)
+        let root = Self.changeRoot
+        let listedBefore = provider.listCallPaths
+
+        // `build` was never expanded, so nothing under it is on screen.
+        store.applyFilesystemChange(RecursivePathChange(paths: ["\(root)/build/out/a.o"]), scope: scope)
+        // A later change to a loaded folder proves the store processed both.
+        provider.listings[root] = .success([
+            FileExplorerEntry(name: "src", path: "\(root)/src", isDirectory: true),
+        ])
+        store.applyFilesystemChange(RecursivePathChange(paths: ["\(root)/README.md"]), scope: scope)
+        try await waitFor("root re-listed") { store.rootNodes.count == 1 }
+
+        #expect(Array(provider.listCallPaths.dropFirst(listedBefore.count)) == [root])
+    }
+
+    @Test
+    func testDroppedHistoryRelistsEveryLoadedFolder() async throws {
+        let provider = MockFileExplorerProvider()
+        let (store, src, scope) = try await makeLoadedTree(provider: provider)
+        let root = Self.changeRoot
+        let listedBefore = provider.listCallPaths.count
+
+        provider.listings["\(root)/src"] = .success([])
+        store.applyFilesystemChange(RecursivePathChange(paths: [], requiresFullRescan: true), scope: scope)
+        try await waitFor("src re-listed") { src.children?.isEmpty == true }
+        try await waitFor("both folders re-listed") { provider.listCallPaths.count == listedBefore + 2 }
+
+        #expect(Set(provider.listCallPaths.dropFirst(listedBefore)) == [root, "\(root)/src"])
+    }
+
+    @Test
+    func testChangeForAnotherRootIsIgnored() async throws {
+        let provider = MockFileExplorerProvider()
+        let (store, _, _) = try await makeLoadedTree(provider: provider)
+        let listedBefore = provider.listCallPaths.count
+        let staleScope = FileExplorerChangeScope(rootPath: "/home/user/other", resolvedRootPath: "/home/user/other")
+
+        store.applyFilesystemChange(RecursivePathChange(paths: [], requiresFullRescan: true), scope: staleScope)
+        // Root-path changes rebuild the tree; a stale watcher event must not.
+        await Task.yield()
+
+        #expect(provider.listCallPaths.count == listedBefore)
+        #expect(store.rootNodes.count == 2)
     }
 }
 
