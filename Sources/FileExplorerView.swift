@@ -112,6 +112,14 @@ struct FileExplorerPanelView: NSViewRepresentable {
         /// same-sized change (a rename, or one file replacing another) reloads.
         private var lastRootNodeIdentities: [ObjectIdentifier]?
         private var lastGitStatusByPath: [String: GitFileStatus] = [:]
+        private lazy var thumbnailCache = FileExplorerThumbnailCache()
+        lazy var quickLook: FileExplorerQuickLookController = {
+            let controller = FileExplorerQuickLookController()
+            controller.onKeyDown = { [weak self] event in
+                self?.handleQuickLookKeyDown(event) ?? false
+            }
+            return controller
+        }()
         private var observationCancellable: AnyCancellable?
         private var styleObserver: Any?
         private var isUpdatingOutlineProgrammatically = false
@@ -311,7 +319,11 @@ struct FileExplorerPanelView: NSViewRepresentable {
             }
 
             let gitStatus = store.gitStatusByPath[node.path]
-            cellView.configure(with: node, gitStatus: gitStatus)
+            cellView.configure(
+                with: node,
+                gitStatus: gitStatus,
+                thumbnails: store.provider is LocalFileExplorerProvider ? thumbnailCache : nil
+            )
             cellView.onHover = { [weak self] isHovering in
                 guard let self else { return }
                 if isHovering {
@@ -337,10 +349,10 @@ struct FileExplorerPanelView: NSViewRepresentable {
         }
 
         func outlineViewSelectionDidChange(_ notification: Notification) {
-            guard !isUpdatingOutlineProgrammatically,
-                  let outlineView = notification.object as? NSOutlineView else {
-                return
-            }
+            guard let outlineView = notification.object as? NSOutlineView else { return }
+            // Keyboard moves select programmatically, so follow them too.
+            defer { quickLookSelectionDidChange(in: outlineView) }
+            guard !isUpdatingOutlineProgrammatically else { return }
             let nodes = outlineView.selectedRowIndexes.compactMap { outlineView.item(atRow: $0) as? FileExplorerNode }
             guard !nodes.isEmpty else { store.select(node: nil); return }
             let anchor = outlineView.selectedRow >= 0 ? outlineView.item(atRow: outlineView.selectedRow) as? FileExplorerNode : nil
@@ -850,6 +862,15 @@ struct FileExplorerPanelView: NSViewRepresentable {
             }
 
             if isLocal {
+                let quickLookItem = NSMenuItem(
+                    title: String(localized: "fileExplorer.contextMenu.quickLook", defaultValue: "Quick Look"),
+                    action: #selector(contextMenuQuickLook(_:)),
+                    keyEquivalent: ""
+                )
+                quickLookItem.target = self
+                quickLookItem.representedObject = node
+                menu.addItem(quickLookItem)
+
                 let revealItem = NSMenuItem(
                     title: FileExternalOpenText.revealInFinder,
                     action: #selector(contextMenuRevealInFinder(_:)),

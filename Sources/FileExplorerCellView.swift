@@ -7,6 +7,8 @@ final class FileExplorerCellView: NSTableCellView {
     private let nameLabel = NSTextField(labelWithString: "")
     private let loadingIndicator = NSProgressIndicator()
     private var trackingArea: NSTrackingArea?
+    private var thumbnailTask: Task<Void, Never>?
+    private var displayedThumbnail: NSImage?
     var onHover: ((Bool) -> Void)?
     private var nameLabelTrailingToLoadingConstraint: NSLayoutConstraint!
     private var nameLabelTrailingToContainerConstraint: NSLayoutConstraint!
@@ -79,7 +81,13 @@ final class FileExplorerCellView: NSTableCellView {
         nameLabelTrailingToLoadingConstraint.isActive = false
     }
 
-    func configure(with node: FileExplorerNode, gitStatus: GitFileStatus? = nil) {
+    /// - Parameter thumbnails: When given, an image file shows its thumbnail in
+    ///   place of the generic icon. Pass `nil` for files that are not on this Mac.
+    func configure(
+        with node: FileExplorerNode,
+        gitStatus: GitFileStatus? = nil,
+        thumbnails: FileExplorerThumbnailCache? = nil
+    ) {
         assert(Thread.isMainThread, "AppKit image updates must run on the main thread")
         let style = FileExplorerStyle.current
         nameLabel.stringValue = node.name
@@ -88,37 +96,25 @@ final class FileExplorerCellView: NSTableCellView {
         iconHeightConstraint.constant = style.iconSize
         iconToTextConstraint.constant = style.iconToTextSpacing
 
-        if style == .finder {
-            // Native Finder icon pixels miss 3:1 in light mode; use their masks with the dynamic palette tint.
-            if node.isDirectory {
-                iconView.apply(CmuxResolvedIconRequest(
-                    source: .image(NSWorkspace.shared.icon(for: .folder)),
-                    size: NSSize(width: style.iconSize, height: style.iconSize),
-                    tintColor: style.folderIconTint
-                ))
-            } else {
-                let pathExtension = (node.name as NSString).pathExtension
-                iconView.apply(CmuxResolvedIconRequest(
-                    source: .image(NSWorkspace.shared.icon(for: UTType(filenameExtension: pathExtension) ?? .data)),
-                    size: NSSize(width: style.iconSize, height: style.iconSize),
-                    tintColor: style.fileIconTint
-                ))
-            }
+        thumbnailTask?.cancel()
+        thumbnailTask = nil
+        displayedThumbnail = nil
+        let iconSize = NSSize(width: style.iconSize, height: style.iconSize)
+        let showsThumbnail = thumbnails != nil
+            && !node.isDirectory
+            && FileExplorerThumbnailCache.isThumbnailable(fileName: node.name)
+        if showsThumbnail, let cached = thumbnails?.cachedThumbnail(forPath: node.path) {
+            showThumbnail(cached, size: iconSize)
         } else {
-            if node.isDirectory {
-                iconView.apply(CmuxResolvedIconRequest(
-                    source: .systemSymbol(name: "folder.fill", accessibilityDescription: nil),
-                    size: NSSize(width: style.iconSize, height: style.iconSize),
-                    tintColor: style.folderIconTint,
-                    symbolWeight: style.iconWeight
-                ))
-            } else {
-                iconView.apply(CmuxResolvedIconRequest(
-                    source: .systemSymbol(name: "doc", accessibilityDescription: nil),
-                    size: NSSize(width: style.iconSize, height: style.iconSize),
-                    tintColor: style.fileIconTint,
-                    symbolWeight: style.iconWeight
-                ))
+            iconView.apply(Self.iconRequest(for: node, style: style, size: iconSize))
+        }
+        if showsThumbnail, let thumbnails {
+            let path = node.path
+            let scale = window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
+            thumbnailTask = Task { [weak self] in
+                let image = await thumbnails.thumbnail(forPath: path, pointSize: iconSize.width, scale: scale)
+                guard !Task.isCancelled, let self, let image else { return }
+                self.showThumbnail(image, size: iconSize)
             }
         }
 
@@ -146,6 +142,49 @@ final class FileExplorerCellView: NSTableCellView {
             nameLabel.textColor = .labelColor
             nameLabel.toolTip = node.path
         }
+    }
+
+    private func showThumbnail(_ image: NSImage, size: NSSize) {
+        guard displayedThumbnail !== image else { return }
+        displayedThumbnail = image
+        iconView.apply(CmuxResolvedIconRequest(source: .image(image), size: size))
+    }
+
+    private static func iconRequest(
+        for node: FileExplorerNode,
+        style: FileExplorerStyle,
+        size: NSSize
+    ) -> CmuxResolvedIconRequest {
+        if style == .finder {
+            // Native Finder icon pixels miss 3:1 in light mode; use their masks with the dynamic palette tint.
+            if node.isDirectory {
+                return CmuxResolvedIconRequest(
+                    source: .image(NSWorkspace.shared.icon(for: .folder)),
+                    size: size,
+                    tintColor: style.folderIconTint
+                )
+            }
+            let pathExtension = (node.name as NSString).pathExtension
+            return CmuxResolvedIconRequest(
+                source: .image(NSWorkspace.shared.icon(for: UTType(filenameExtension: pathExtension) ?? .data)),
+                size: size,
+                tintColor: style.fileIconTint
+            )
+        }
+        if node.isDirectory {
+            return CmuxResolvedIconRequest(
+                source: .systemSymbol(name: "folder.fill", accessibilityDescription: nil),
+                size: size,
+                tintColor: style.folderIconTint,
+                symbolWeight: style.iconWeight
+            )
+        }
+        return CmuxResolvedIconRequest(
+            source: .systemSymbol(name: "doc", accessibilityDescription: nil),
+            size: size,
+            tintColor: style.fileIconTint,
+            symbolWeight: style.iconWeight
+        )
     }
 
     override func updateTrackingAreas() {

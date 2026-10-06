@@ -54,6 +54,11 @@ final class FileExplorerNSOutlineView: NSOutlineView {
             return
         }
 
+        if RightSidebarKeyboardNavigation.isPlainSpace(event) {
+            fileExplorerCoordinator?.toggleQuickLook(in: self)
+            return
+        }
+
         if let delta = RightSidebarKeyboardNavigation.moveDelta(for: event) {
             endQuickSearch()
             fileExplorerCoordinator?.moveSelection(in: self, by: delta)

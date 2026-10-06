@@ -1919,6 +1919,10 @@
 		FE5996030000000000000002 /* FileExplorerNSOutlineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5996030000000000000001 /* FileExplorerNSOutlineView.swift */; };
 		A2CFBE5869E987D3E306CB7A /* FileExplorerOpenedTabDragSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06880917B87678F2857EC8FB /* FileExplorerOpenedTabDragSourceTests.swift */; };
 		828800020000000000000002 /* FileExplorerPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 828800020000000000000001 /* FileExplorerPalette.swift */; };
+		5B1DE0A70000000000000509 /* FileExplorerPanelView+QuickLook.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1DE0A7000000000000050A /* FileExplorerPanelView+QuickLook.swift */; };
+		5B1DE0A70000000000000409 /* FileExplorerQuickLookController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1DE0A7000000000000040A /* FileExplorerQuickLookController.swift */; };
+		5B1DE0A70000000000000309 /* FileExplorerQuickLookItems.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1DE0A7000000000000030A /* FileExplorerQuickLookItems.swift */; };
+		A7757AF5B62CDD4A6D87320A /* FileExplorerQuickLookItemsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C6FD919A062E4103AC0B834 /* FileExplorerQuickLookItemsTests.swift */; };
 		FE002101 /* FileExplorerRootResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE002001 /* FileExplorerRootResolverTests.swift */; };
 		9F8A6669D6F54F0EA8E8BEB8 /* FileExplorerRootSyncPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 120A1EF846214C938416846E /* FileExplorerRootSyncPolicyTests.swift */; };
 		FE5996040000000000000002 /* FileExplorerRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE5996040000000000000001 /* FileExplorerRowView.swift */; };
@@ -1933,6 +1937,8 @@
 		FE002102 /* FileExplorerStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE002002 /* FileExplorerStoreTests.swift */; };
 		828800010000000000000002 /* FileExplorerStyleContrastTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 828800010000000000000001 /* FileExplorerStyleContrastTests.swift */; };
 		FE001104 /* FileExplorerTerminalPathInsertion.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE001004 /* FileExplorerTerminalPathInsertion.swift */; };
+		5B1DE0A70000000000000209 /* FileExplorerThumbnailCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1DE0A7000000000000020A /* FileExplorerThumbnailCache.swift */; };
+		B0677CCEBF1B1C30F6232982 /* FileExplorerThumbnailCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 562888EC3211FFC8EEFE6BA8 /* FileExplorerThumbnailCacheTests.swift */; };
 		FE001102 /* FileExplorerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE001002 /* FileExplorerView.swift */; };
 		A5001441A5001441A5001441 /* FileOpenSocketSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001440A5001440A5001440 /* FileOpenSocketSupport.swift */; };
 		C01E00070000000000000001 /* FilePreviewCodeViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01E00070000000000000002 /* FilePreviewCodeViewTests.swift */; };
@@ -6071,6 +6077,10 @@
 		FE5996030000000000000001 /* FileExplorerNSOutlineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerNSOutlineView.swift; sourceTree = "<group>"; };
 		06880917B87678F2857EC8FB /* FileExplorerOpenedTabDragSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerOpenedTabDragSourceTests.swift; sourceTree = "<group>"; };
 		828800020000000000000001 /* FileExplorerPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerPalette.swift; sourceTree = "<group>"; };
+		5B1DE0A7000000000000050A /* FileExplorerPanelView+QuickLook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileExplorerPanelView+QuickLook.swift"; sourceTree = "<group>"; };
+		5B1DE0A7000000000000040A /* FileExplorerQuickLookController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerQuickLookController.swift; sourceTree = "<group>"; };
+		5B1DE0A7000000000000030A /* FileExplorerQuickLookItems.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerQuickLookItems.swift; sourceTree = "<group>"; };
+		3C6FD919A062E4103AC0B834 /* FileExplorerQuickLookItemsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileExplorerQuickLookItemsTests.swift"; sourceTree = "<group>"; };
 		FE002001 /* FileExplorerRootResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerRootResolverTests.swift; sourceTree = "<group>"; };
 		120A1EF846214C938416846E /* FileExplorerRootSyncPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerRootSyncPolicyTests.swift; sourceTree = "<group>"; };
 		FE5996040000000000000001 /* FileExplorerRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerRowView.swift; sourceTree = "<group>"; };
@@ -6085,6 +6095,8 @@
 		FE002002 /* FileExplorerStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerStoreTests.swift; sourceTree = "<group>"; };
 		828800010000000000000001 /* FileExplorerStyleContrastTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerStyleContrastTests.swift; sourceTree = "<group>"; };
 		FE001004 /* FileExplorerTerminalPathInsertion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerTerminalPathInsertion.swift; sourceTree = "<group>"; };
+		5B1DE0A7000000000000020A /* FileExplorerThumbnailCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerThumbnailCache.swift; sourceTree = "<group>"; };
+		562888EC3211FFC8EEFE6BA8 /* FileExplorerThumbnailCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileExplorerThumbnailCacheTests.swift"; sourceTree = "<group>"; };
 		FE001002 /* FileExplorerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileExplorerView.swift; sourceTree = "<group>"; };
 		A5001440A5001440A5001440 /* FileOpenSocketSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOpenSocketSupport.swift; sourceTree = "<group>"; };
 		C01E00070000000000000002 /* FilePreviewCodeViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePreviewCodeViewTests.swift; sourceTree = "<group>"; };
@@ -11044,6 +11056,10 @@
 				B37A0000000000000000000A /* FileExplorerState.swift */,
 				5B1DE0A7000000000000000A /* RightSidebarTabVisibilityMemory.swift */,
 				5B1DE0A7000000000000010A /* FileExplorerChangeScope.swift */,
+				5B1DE0A7000000000000020A /* FileExplorerThumbnailCache.swift */,
+				5B1DE0A7000000000000030A /* FileExplorerQuickLookItems.swift */,
+				5B1DE0A7000000000000040A /* FileExplorerQuickLookController.swift */,
+				5B1DE0A7000000000000050A /* FileExplorerPanelView+QuickLook.swift */,
 				FE001001 /* FileExplorerStore.swift */,
 				FE001004 /* FileExplorerTerminalPathInsertion.swift */,
 				FE001002 /* FileExplorerView.swift */,
@@ -12533,6 +12549,8 @@
 				8C6F4D7DD1792A39D8DB3BDD /* CommandPaletteFloatingPanelTests.swift */,
 				0A4B23D7D834760D0E62722B /* FilePreviewGoToLineTests.swift */,
 				9DD9946B9946853903C89839 /* FileExplorerChangeScopeTests.swift */,
+				3C6FD919A062E4103AC0B834 /* FileExplorerQuickLookItemsTests.swift */,
+				562888EC3211FFC8EEFE6BA8 /* FileExplorerThumbnailCacheTests.swift */,
 				6ACC55648A3FDBF46FF46660 /* RightSidebarTabVisibilityTests.swift */,
 			);
 			path = cmuxTests;
@@ -14341,6 +14359,9 @@
 				FE001105 /* FileExplorerKeyboardShortcuts.swift in Sources */,
 				FE5996030000000000000002 /* FileExplorerNSOutlineView.swift in Sources */,
 				828800020000000000000002 /* FileExplorerPalette.swift in Sources */,
+				5B1DE0A70000000000000509 /* FileExplorerPanelView+QuickLook.swift in Sources */,
+				5B1DE0A70000000000000409 /* FileExplorerQuickLookController.swift in Sources */,
+				5B1DE0A70000000000000309 /* FileExplorerQuickLookItems.swift in Sources */,
 				FE5996040000000000000002 /* FileExplorerRowView.swift in Sources */,
 				FE001103 /* FileExplorerSearchController.swift in Sources */,
 				FE5996050000000000000002 /* FileExplorerSearchField.swift in Sources */,
@@ -14349,6 +14370,7 @@
 				B37A00000000000000000009 /* FileExplorerState.swift in Sources */,
 				FE001101 /* FileExplorerStore.swift in Sources */,
 				FE001104 /* FileExplorerTerminalPathInsertion.swift in Sources */,
+				5B1DE0A70000000000000209 /* FileExplorerThumbnailCache.swift in Sources */,
 				FE001102 /* FileExplorerView.swift in Sources */,
 				A5001441A5001441A5001441 /* FileOpenSocketSupport.swift in Sources */,
 					C01E00060000000000000001 /* FilePreviewEditorChromeOverlay.swift in Sources */,
@@ -16745,12 +16767,14 @@
 				FE002112 /* FileExplorerGitStatusProviderTests.swift in Sources */,
 				9860F0029860F0029860F002 /* FileExplorerNativeDragOwnershipTests.swift in Sources */,
 				A2CFBE5869E987D3E306CB7A /* FileExplorerOpenedTabDragSourceTests.swift in Sources */,
+				A7757AF5B62CDD4A6D87320A /* FileExplorerQuickLookItemsTests.swift in Sources */,
 				FE002101 /* FileExplorerRootResolverTests.swift in Sources */,
 				9F8A6669D6F54F0EA8E8BEB8 /* FileExplorerRootSyncPolicyTests.swift in Sources */,
 				F5996002A1B2C3D4E5F60001 /* FileExplorerShortcutSettingsTests.swift in Sources */,
 				B37A0000000000000000000B /* FileExplorerStateModePersistenceTests.swift in Sources */,
 				FE002102 /* FileExplorerStoreTests.swift in Sources */,
 				828800010000000000000002 /* FileExplorerStyleContrastTests.swift in Sources */,
+				B0677CCEBF1B1C30F6232982 /* FileExplorerThumbnailCacheTests.swift in Sources */,
 				C01E00070000000000000001 /* FilePreviewCodeViewTests.swift in Sources */,
 				4E79F6486A786ADB5EE5E463 /* FilePreviewGoToLineTests.swift in Sources */,
 				C0DE49950000000000000001 /* FilePreviewKindResolverTests.swift in Sources */,

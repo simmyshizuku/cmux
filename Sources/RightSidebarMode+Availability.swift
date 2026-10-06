@@ -162,6 +162,15 @@ enum RightSidebarKeyboardNavigation {
         return event.keyCode == 44
     }
 
+    static func isPlainSpace(_ event: NSEvent) -> Bool {
+        guard event.type == .keyDown else { return false }
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard flags.intersection([.command, .control, .option, .shift]).isEmpty else {
+            return false
+        }
+        return event.keyCode == 49
+    }
+
     static func isPlainPrintableText(_ event: NSEvent) -> Bool {
         guard event.type == .keyDown else { return false }
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
