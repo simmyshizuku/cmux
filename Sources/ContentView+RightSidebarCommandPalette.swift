@@ -15,12 +15,17 @@ extension ContentView {
             .first(where: { $0.globalFontMagnificationCommandId == commandId }) {
             return magnificationAction
         }
+        if let parityCommand = ShortcutParityPaletteCommand(rawValue: commandId) {
+            return parityCommand.shortcutAction
+        }
 
         switch commandId {
         case ContentView.commandPaletteFilePreviewGoToLineCommandId:
             return .filePreviewGoToLine
         case ContentView.commandPaletteFilePreviewFindAndReplaceCommandId:
             return .filePreviewFindAndReplace
+        case Self.commandPaletteAuthTeamPickerCommandId:
+            return .openTeamPicker
         case "palette.newWorkspace":
             return .newTab
         case "palette.newBrowserWorkspace":
@@ -61,6 +66,8 @@ extension ContentView {
             return .editWorkspaceDescription
         case "palette.markWorkspaceDone":
             return .markWorkspaceDone
+        case WorkspaceTodoPaletteCommands.cycleWorkspaceStatusCommandId:
+            return .cycleWorkspaceStatus
         case "palette.nextWorkspace":
             return .nextSidebarTab
         case "palette.previousWorkspace":
@@ -105,12 +112,18 @@ extension ContentView {
             return .attachTextBoxFile
         case "palette.terminalSendCtrlF":
             return .sendCtrlFToTerminal
+        case "palette.terminalPasteLastScreenshot":
+            return .pasteLastScreenshot
+        case "palette.terminalSizeToMyWindow":
+            return .sizeTerminalToMyWindow
         case "palette.terminalClearScreenKeepScrollback":
             return .clearScreenKeepScrollback
         case "palette.toggleSplitZoom":
             return .toggleSplitZoom
         case "palette.equalizeSplits":
             return .equalizeSplits
+        case "palette.newPaneAutoLayout":
+            return .newPaneAutoLayout
         case "palette.resizePaneLeft":
             return .resizePaneLeft
         case "palette.resizePaneRight":

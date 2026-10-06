@@ -36,6 +36,7 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case goToWorkspace
     case goToFile
     case commandPalette
+    case agentInbox
     case commandPaletteNext
     case commandPalettePrevious
     case sendFeedback
@@ -88,6 +89,8 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case moveWorkspaceDown
     case focusHistoryBack
     case focusHistoryForward
+    /// Toggles focus between the current position and the one it last left.
+    case focusHistoryLast
     case selectWorkspaceByNumber
     case renameTab
     case renameWorkspace
@@ -117,6 +120,10 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case attachTextBoxFile
     /// Sends a Ctrl-F keystroke through to the focused terminal.
     case sendCtrlFToTerminal
+    /// Pastes the path of the newest screenshot into the focused terminal.
+    case pasteLastScreenshot
+    /// Makes the focused shared terminal's grid follow this Mac's window.
+    case sizeTerminalToMyWindow
     /// Clears the focused terminal's visible screen while preserving scrollback.
     case clearScreenKeepScrollback
 
@@ -129,6 +136,7 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case focusNextPane
     case splitRight
     case splitDown
+    case newPaneAutoLayout
     case toggleSplitZoom
     /// Increases every terminal font size in the selected workspace.
     case increaseWorkspaceTerminalFontSize
@@ -177,6 +185,8 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case filePreviewGoToLine
     /// Opens find with the replace row in a focused File Preview text editor.
     case filePreviewFindAndReplace
+    /// Toggles soft wrapping while a file-editor text view owns focus.
+    case toggleFileEditorWordWrap
     case openBrowser
     case focusBrowserAddressBar
     case browserBack
@@ -224,6 +234,12 @@ public enum ShortcutAction: String, CaseIterable, Sendable, Hashable, SettingCod
     case diffViewerNextFile
     /// Jumps to the previous file inside the focused diff viewer.
     case diffViewerPreviousFile
+    /// Jumps to the next hunk inside the focused diff viewer.
+    case diffViewerNextHunk
+    /// Jumps to the previous hunk inside the focused diff viewer.
+    case diffViewerPreviousHunk
+    /// Toggles the "Viewed" mark on the current file inside the focused diff viewer.
+    case diffViewerToggleViewed
 
     // MARK: Simulator
     /// Presses the Home button in the focused Simulator pane.
@@ -276,6 +292,9 @@ extension ShortcutAction {
              .diffViewerOpenFileSearch,
              .diffViewerNextFile,
              .diffViewerPreviousFile,
+             .diffViewerNextHunk,
+             .diffViewerPreviousHunk,
+             .diffViewerToggleViewed,
              .fileExplorerOpenSelection,
              .fileExplorerOpenSelectionFinderAlias:
             return true
@@ -311,14 +330,15 @@ extension ShortcutAction {
             return .key(ShortcutContextKnownKey.commandPaletteVisible.rawValue)
         case .renameTab, .renameWorkspace:
             return .and(.not(.atom(.browserFocus)), .not(.atom(.sidebarFocus)))
-        case .sendCtrlFToTerminal, .clearScreenKeepScrollback:
+        case .sendCtrlFToTerminal, .pasteLastScreenshot, .sizeTerminalToMyWindow, .clearScreenKeepScrollback:
             return .and(.not(.atom(.browserFocus)), .not(.atom(.sidebarFocus)))
         case .focusHistoryBack, .focusHistoryForward:
             return .not(.atom(.browserFocus))
         case .browserBack, .browserForward, .browserReload, .browserHardReload,
              .toggleBrowserDeveloperTools, .showBrowserJavaScriptConsole, .toggleBrowserFocusMode,
              .toggleBrowserDesignMode, .diffViewerOpenFileSearch, .diffViewerNextFile,
-             .diffViewerPreviousFile:
+             .diffViewerPreviousFile, .diffViewerNextHunk, .diffViewerPreviousHunk,
+             .diffViewerToggleViewed:
             return .atom(.browserFocus)
         case .diffViewerScrollDown, .diffViewerScrollUp,
              .diffViewerScrollHalfPageDown, .diffViewerScrollHalfPageUp,
@@ -327,6 +347,8 @@ extension ShortcutAction {
             return .or(.atom(.browserFocus), .atom(.markdownFocus))
         case .browserZoomIn, .browserZoomOut, .browserZoomReset:
             return .or(.atom(.browserFocus), .atom(.filePreviewTextEditorFocus))
+        case .toggleFileEditorWordWrap:
+            return .atom(.filePreviewTextEditorFocus)
         case .markdownZoomIn, .markdownZoomOut, .markdownZoomReset:
             return .atom(.markdownFocus)
         case .simulatorHome, .simulatorRotateLeft, .simulatorRotateRight,

@@ -9,6 +9,8 @@
 public enum CommandPaletteRequestKind: String, Sendable, CaseIterable {
     /// Opens the command list palette.
     case commands
+    /// Opens the agent inbox quick view.
+    case agentInbox
     /// Opens the workspace switcher palette.
     case switcher
     /// Opens the file picker.
@@ -19,6 +21,9 @@ public enum CommandPaletteRequestKind: String, Sendable, CaseIterable {
     case renameWorkspace
     /// Opens the edit-workspace-description prompt.
     case editWorkspaceDescription
+    /// Opens the rename prompt for an explicit target carried in the
+    /// notification's `userInfo` (see `CommandPaletteRenameTarget.userInfo`).
+    case rename
 
     /// The raw notification name posted for this request.
     ///
@@ -29,6 +34,8 @@ public enum CommandPaletteRequestKind: String, Sendable, CaseIterable {
         switch self {
         case .commands:
             return "cmux.commandPaletteRequested"
+        case .agentInbox:
+            return "cmux.agentInboxRequested"
         case .switcher:
             return "cmux.commandPaletteSwitcherRequested"
         case .files:
@@ -39,6 +46,8 @@ public enum CommandPaletteRequestKind: String, Sendable, CaseIterable {
             return "cmux.commandPaletteRenameWorkspaceRequested"
         case .editWorkspaceDescription:
             return "cmux.commandPaletteEditWorkspaceDescriptionRequested"
+        case .rename:
+            return "cmux.commandPaletteRenameRequested"
         }
     }
 
@@ -49,7 +58,7 @@ public enum CommandPaletteRequestKind: String, Sendable, CaseIterable {
     /// change rather than a call-site edit.
     public var marksPending: Bool {
         switch self {
-        case .commands, .switcher, .files, .renameTab, .renameWorkspace, .editWorkspaceDescription:
+        case .commands, .agentInbox, .switcher, .files, .renameTab, .renameWorkspace, .editWorkspaceDescription, .rename:
             return true
         }
     }

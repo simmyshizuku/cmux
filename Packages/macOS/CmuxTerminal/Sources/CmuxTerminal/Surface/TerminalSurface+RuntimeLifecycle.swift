@@ -189,6 +189,10 @@ extension TerminalSurface {
             )
             registry.unregisterRuntimeSurface(surface, ownerId: id)
             self.surface = nil
+            // The native surface is already gone, so its renderer may be too.
+            runtimeDisplayLayer?.detachRendererDisplayCallback()
+            runtimeDisplayLayer = nil
+            paneHost.terminalSurfaceRuntimeDidRelease()
             activePortalHostLease = nil
             portalHostAuthority = nil
             byteTee.dropSurface(surfaceID: id)
@@ -238,6 +242,17 @@ extension TerminalSurface {
     /// complete instead of retaining a hidden mount slot for them forever.
     public var canCreateRuntimeSurface: Bool {
         allowsRuntimeSurfaceCreation()
+    }
+
+    /// Why this surface has no live runtime right now.
+    ///
+    /// Only meaningful while the surface has no live runtime. Closing wins
+    /// over the other states because a closing surface never starts again.
+    public var runtimeUnavailableReason: TerminalSurfaceRuntimeUnavailableReason {
+        if portalLifecycleState != .live { return .closing }
+        if runtimeSurfaceSuspendedForAgentHibernation { return .hibernated }
+        if startupRestoreAdmissionPhase == .awaitingAdmission { return .awaitingRestore }
+        return .starting
     }
 
     private var hasDeferredStartupWork: Bool {
@@ -297,6 +312,9 @@ extension TerminalSurface {
     public func teardownSurface() {
         recordTeardownRequest(reason: "surface.teardown")
         markPortalLifecycleClosed(reason: "teardown")
+        // A close during the agent-hibernation signal/wait window leaves the
+        // reservation unconsumed; give the bounded slot back (#15652).
+        cancelAgentHibernationRuntimeTeardownReservation()
         retireSurfaceRegistryRegistrationIfNeeded()
         backgroundSurfaceStartSource = .normal
         cancelAgentCommandShimInstallLifecycle()
@@ -310,12 +328,18 @@ extension TerminalSurface {
         self.manualIOContext = nil
         let teeLease = mobileByteTeeLease
         mobileByteTeeLease = nil
+        let displayLayer = runtimeDisplayLayer
+        runtimeDisplayLayer = nil
         byteTee.dropSurface(surfaceID: id)
         if let surfaceToFree {
             registry.unregisterRuntimeSurface(surfaceToFree, ownerId: id)
         }
         surface = nil
+        if surfaceToFree != nil {
+            paneHost.terminalSurfaceRuntimeDidRelease()
+        }
         guard let surfaceToFree else {
+            displayLayer?.detachRendererDisplayCallback()
             callbackContext?.release()
             manualIOContext?.release()
             teeLease?.release()
@@ -325,6 +349,7 @@ extension TerminalSurface {
 #if DEBUG
         if runtimeSurfaceFreedOutOfBandForTesting {
             runtimeSurfaceFreedOutOfBandForTesting = false
+            displayLayer?.detachRendererDisplayCallback()
             callbackContext?.release()
             manualIOContext?.release()
             teeLease?.release()
@@ -344,6 +369,7 @@ extension TerminalSurface {
                 callbackContext: callbackContext,
                 manualIOContext: manualIOContext,
                 byteTeeLease: teeLease,
+                displayLayer: displayLayer,
                 beforeFree: {
                     await retiredRemoteOutputLane.drain()
                 },
@@ -361,6 +387,7 @@ extension TerminalSurface {
             callbackContext: callbackContext,
             manualIOContext: manualIOContext,
             byteTeeLease: teeLease,
+            displayLayer: displayLayer,
             beforeFree: {
                 await retiredRemoteOutputLane.drain()
             }
@@ -404,12 +431,17 @@ extension TerminalSurface {
         self.manualIOContext = nil
         let teeLease = mobileByteTeeLease
         mobileByteTeeLease = nil
+        let displayLayer = runtimeDisplayLayer
+        runtimeDisplayLayer = nil
         byteTee.dropSurface(surfaceID: id)
 
         if let surfaceToFree {
             registry.unregisterRuntimeSurface(surfaceToFree, ownerId: id)
         }
         surface = nil
+        if surfaceToFree != nil {
+            paneHost.terminalSurfaceRuntimeDidRelease()
+        }
         activePortalHostLease = nil
         portalHostAuthority = nil
         clearPortalHostVacancyRetries()
@@ -422,6 +454,7 @@ extension TerminalSurface {
             runtimeTeardown.cancelIsolatedHibernationTeardown(
                 teardownReservation
             )
+            displayLayer?.detachRendererDisplayCallback()
             callbackContext?.release()
             manualIOContext?.release()
             teeLease?.release()
@@ -448,6 +481,7 @@ extension TerminalSurface {
                 callbackContext: callbackContext,
                 manualIOContext: manualIOContext,
                 byteTeeLease: teeLease,
+                displayLayer: displayLayer,
                 beforeFree: {
                     await retiredRemoteOutputLane.drain()
                 },
@@ -467,6 +501,7 @@ extension TerminalSurface {
             callbackContext: callbackContext,
             manualIOContext: manualIOContext,
             byteTeeLease: teeLease,
+            displayLayer: displayLayer,
             beforeFree: {
                 await retiredRemoteOutputLane.drain()
             },
@@ -524,19 +559,6 @@ extension TerminalSurface {
         runtimeSurfaceSuspendedForAgentHibernation = false
         prepareNextRuntimeInitialInput(initialInput)
         return true
-    }
-
-    /// Sets the transport-only command used when a deferred restore is cancelled.
-    ///
-    /// Persistent SSH restores keep their PTY attached after cancellation, but
-    /// must omit the embedded agent-resume payload. The value is captured when
-    /// admission is cancelled and remains in force for later runtime retries.
-    ///
-    /// - Parameter command: The transport-only command to run after cancellation.
-    @MainActor
-    public func setStartupRestoreAdmissionFallbackCommand(_ command: String?) {
-        guard startupRestoreAdmissionPhase == .awaitingAdmission else { return }
-        startupRestoreAdmissionFallbackCommand = command?.isEmpty == false ? command : nil
     }
 
     /// Primes the initial input for the next runtime spawn only.
@@ -809,6 +831,9 @@ extension TerminalSurface {
             return
         }
         guard let createdSurface = surface else { return }
+        // `ghostty_surface_new` has just made `view` layer-hosting with this
+        // surface's renderer layer.
+        runtimeDisplayLayer = TerminalSurfaceRuntimeDisplayLayer(hostingLayerOf: view)
         guard let surfaceCallbackContext else {
             preconditionFailure(
                 "A native terminal surface requires callback userdata"

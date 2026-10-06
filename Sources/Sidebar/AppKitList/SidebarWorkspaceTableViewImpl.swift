@@ -12,6 +12,18 @@ final class SidebarWorkspaceTableViewImpl: NSTableView {
     private var pointerTrackingArea: NSTrackingArea?
     private(set) var lastPointerWindowLocation: NSPoint?
 
+    /// Pointer location for hover recomputes that no event drove (content
+    /// applies, menu close, viewport changes). Tracking events stop while a
+    /// context menu or drag session runs, so the cached point can be where
+    /// the pointer was when the menu opened. "Close Workspace" from a row
+    /// menu then revealed the X on whichever row slid into that old spot.
+    /// Read the live pointer instead, and only while the tracking area
+    /// still has the pointer inside the table.
+    var livePointerWindowLocation: NSPoint? {
+        guard lastPointerWindowLocation != nil, let window else { return nil }
+        return window.mouseLocationOutsideOfEventStream
+    }
+
     // The table is the native source of workspace drags. NSTableView declares
     // this NSDraggingSource method but does not implement it, so calling super
     // raises an unrecognized-selector exception inside the drag loop and
@@ -34,6 +46,7 @@ final class SidebarWorkspaceTableViewImpl: NSTableView {
         )
         addTrackingArea(next)
         pointerTrackingArea = next
+        SidebarReorderInteractionState.shared.register(table: self)
     }
 
     override func mouseEntered(with event: NSEvent) {
@@ -97,7 +110,7 @@ final class SidebarWorkspaceTableViewImpl: NSTableView {
         if point == nil {
             workspaceController?.pointerDidLeaveTable()
         } else {
-            workspaceController?.recomputeHoveredRow()
+            workspaceController?.recomputeHoveredRow(windowPoint: point)
         }
     }
 }

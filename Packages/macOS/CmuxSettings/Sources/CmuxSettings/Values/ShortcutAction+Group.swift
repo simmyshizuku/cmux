@@ -8,7 +8,7 @@ extension ShortcutAction {
              .resetGlobalFontMagnification:
             return .app
         case .toggleSidebar, .newTab, .newBrowserWorkspace, .newCloudWorkspace, .newCloudMachine, .saveLayoutTemplate, .openFolder, .reopenPreviousSession, .goToWorkspace, .goToFile,
-             .commandPalette, .commandPaletteNext, .commandPalettePrevious, .sendFeedback,
+             .commandPalette, .agentInbox, .commandPaletteNext, .commandPalettePrevious, .sendFeedback,
              .showNotifications, .jumpToUnread, .toggleUnread, .markOldestUnreadAndJumpNext,
              .markAllNotificationsRead, .clearAllNotifications,
              .focusRightSidebar, .switchRightSidebarToFiles, .switchRightSidebarToFind,
@@ -23,18 +23,18 @@ extension ShortcutAction {
              .nextSidebarTab, .prevSidebarTab,
              .nextSidebarTabInGroup, .prevSidebarTabInGroup,
              .moveWorkspaceUp, .moveWorkspaceDown,
-             .focusHistoryBack, .focusHistoryForward, .selectWorkspaceByNumber,
+             .focusHistoryBack, .focusHistoryForward, .focusHistoryLast, .selectWorkspaceByNumber,
              .renameTab, .renameWorkspace, .editWorkspaceDescription,
              .markWorkspaceDone, .cycleWorkspaceStatus, .toggleChecklistItemComplete,
              .closeTab, .closeOtherTabsInPane, .closeWorkspace,
              .newWorkspaceGroup, .groupSelectedWorkspaces,
              .toggleFocusedWorkspaceGroupCollapsed, .reopenClosedBrowserPanel,
              .newSurface, .toggleTerminalCopyMode, .focusTextBoxInput,
-             .cycleTextBoxSubmitAction, .attachTextBoxFile, .sendCtrlFToTerminal,
+             .cycleTextBoxSubmitAction, .attachTextBoxFile, .sendCtrlFToTerminal, .pasteLastScreenshot, .sizeTerminalToMyWindow,
              .clearScreenKeepScrollback:
             return .navigation
         case .focusLeft, .focusRight, .focusUp, .focusDown,
-             .focusPreviousPane, .focusNextPane, .splitRight, .splitDown,
+             .focusPreviousPane, .focusNextPane, .splitRight, .splitDown, .newPaneAutoLayout,
              .toggleSplitZoom, .increaseWorkspaceTerminalFontSize,
              .decreaseWorkspaceTerminalFontSize, .resetWorkspaceTerminalFontSize,
              .equalizeSplits, .resizePaneLeft, .resizePaneRight,
@@ -48,7 +48,7 @@ extension ShortcutAction {
              .simulatorHome, .simulatorRotateLeft, .simulatorRotateRight,
              .simulatorToggleAppearance, .simulatorToggleSoftwareKeyboard:
             return .panes
-        case .openDiffViewer, .saveFilePreview, .filePreviewGoToLine, .filePreviewFindAndReplace, .openBrowser, .focusBrowserAddressBar,
+        case .openDiffViewer, .saveFilePreview, .filePreviewGoToLine, .filePreviewFindAndReplace, .toggleFileEditorWordWrap, .openBrowser, .focusBrowserAddressBar,
              .browserBack, .browserForward, .browserReload, .browserHardReload,
              .browserZoomIn, .browserZoomOut, .browserZoomReset,
              .markdownZoomIn, .markdownZoomOut, .markdownZoomReset,
@@ -60,7 +60,8 @@ extension ShortcutAction {
              .diffViewerScrollHalfPageDown, .diffViewerScrollHalfPageUp,
              .diffViewerScrollDownEmacs, .diffViewerScrollUpEmacs,
              .diffViewerScrollToBottom, .diffViewerScrollToTop,
-             .diffViewerOpenFileSearch, .diffViewerNextFile, .diffViewerPreviousFile:
+             .diffViewerOpenFileSearch, .diffViewerNextFile, .diffViewerPreviousFile,
+             .diffViewerNextHunk, .diffViewerPreviousHunk, .diffViewerToggleViewed:
             return .browser
         }
     }

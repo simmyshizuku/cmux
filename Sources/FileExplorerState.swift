@@ -6,13 +6,25 @@ import SwiftUI
 final class FileExplorerState: ObservableObject {
     private static let modeKey = "rightSidebar.mode"
     private static let customSidebarNameKey = "rightSidebar.customSidebarName"
+    private let defaults: UserDefaults
 
     @Published var isVisible: Bool {
-        didSet {
-            UserDefaults.standard.set(isVisible, forKey: "fileExplorer.isVisible")
-            if let activeTabId {
-                activeTabVisibilityMemory?.record(isVisible, forPanelId: activeTabId)
-            }
+        didSet { persistVisibility() }
+    }
+    /// Hidden because the window was too narrow (SidePanelWidthFit), not by the
+    /// person. Persisted as visible, so a narrow window neither changes the
+    /// default for new windows nor the next launch. Set it before `isVisible`.
+    var isAutoCollapsed = false {
+        didSet { persistVisibility() }
+    }
+
+    /// What the person chose: shown, even while a narrow window keeps it collapsed.
+    private var isWantedVisible: Bool { isVisible || isAutoCollapsed }
+
+    private func persistVisibility() {
+        defaults.set(isWantedVisible, forKey: "fileExplorer.isVisible")
+        if let activeTabId {
+            activeTabVisibilityMemory?.record(isWantedVisible, forPanelId: activeTabId)
         }
     }
 
@@ -21,18 +33,22 @@ final class FileExplorerState: ObservableObject {
     private(set) var activeTabId: UUID?
     private weak var activeTabVisibilityMemory: RightSidebarTabVisibilityMemory?
     @Published var width: CGFloat {
-        didSet { UserDefaults.standard.set(Double(width), forKey: "fileExplorer.width") }
+        didSet { defaults.set(Double(width), forKey: "fileExplorer.width") }
     }
+    /// The width the mode bar needs for the selected tab's full name, the other
+    /// tabs as icons, and its trailing controls; the right sidebar never gets
+    /// narrower. Not persisted.
+    @Published var modeBarMinimumWidth: CGFloat = 0
 
     /// Proportion of sidebar height allocated to the tab list (0.0-1.0).
     /// The file explorer gets the remaining space below.
     @Published var dividerPosition: CGFloat {
-        didSet { UserDefaults.standard.set(Double(dividerPosition), forKey: "fileExplorer.dividerPosition") }
+        didSet { defaults.set(Double(dividerPosition), forKey: "fileExplorer.dividerPosition") }
     }
 
     /// Whether hidden files (dotfiles) are shown in the tree.
     @Published var showHiddenFiles: Bool {
-        didSet { UserDefaults.standard.set(showHiddenFiles, forKey: "fileExplorer.showHidden") }
+        didSet { defaults.set(showHiddenFiles, forKey: "fileExplorer.showHidden") }
     }
 
     @Published private var storedMode: RightSidebarMode
@@ -46,6 +62,9 @@ final class FileExplorerState: ObservableObject {
     /// persisted).
     @Published var rightSidebarOwnsInputFocus: Bool = false
 
+    /// The right-sidebar Cloud picker belongs to this window, even before it mounts.
+    @MainActor lazy var cloudTeamPickerPresentation = CloudTeamPickerPresentation()
+
     /// Active mode for the right sidebar (file tree, search, sessions, or enabled beta modes).
     var mode: RightSidebarMode {
         get { storedMode }
@@ -56,8 +75,8 @@ final class FileExplorerState: ObservableObject {
         storedCustomSidebarName
     }
 
-    init() {
-        let defaults = UserDefaults.standard
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         self.isVisible = defaults.bool(forKey: "fileExplorer.isVisible")
         let storedWidth = defaults.double(forKey: "fileExplorer.width")
         self.width = storedWidth > 0 ? CGFloat(storedWidth) : 220
@@ -76,11 +95,13 @@ final class FileExplorerState: ObservableObject {
     /// `mode` set (which may reveal a user-hidden tab: CLI, palette,
     /// notification routing), restore and preference changes never resurrect a
     /// hidden tab.
-    func refreshModeAvailability(defaults: UserDefaults = .standard) {
+    func refreshModeAvailability(defaults: UserDefaults? = nil) {
+        let defaults = defaults ?? self.defaults
         setMode(Self.visibleMode(storedMode, defaults: defaults), defaults: defaults)
     }
 
-    func selectCustomSidebar(name rawName: String, defaults: UserDefaults = .standard) {
+    func selectCustomSidebar(name rawName: String, defaults: UserDefaults? = nil) {
+        let defaults = defaults ?? self.defaults
         let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
         storedCustomSidebarName = name
@@ -105,9 +126,12 @@ final class FileExplorerState: ObservableObject {
         activeTabId = panelId
         activeTabVisibilityMemory = memory
         if let remembered = memory.visibility(forPanelId: panelId) {
+            // A tab that wants the sidebar stays collapsed in a narrow window.
+            guard remembered != isWantedVisible else { return }
+            if !remembered { isAutoCollapsed = false }
             setVisible(remembered)
         } else {
-            memory.record(isVisible, forPanelId: panelId)
+            memory.record(isWantedVisible, forPanelId: panelId)
         }
     }
 
@@ -133,7 +157,8 @@ final class FileExplorerState: ObservableObject {
         }
     }
 
-    private func setMode(_ mode: RightSidebarMode, defaults: UserDefaults = .standard) {
+    private func setMode(_ mode: RightSidebarMode, defaults: UserDefaults? = nil) {
+        let defaults = defaults ?? self.defaults
         let nextMode = Self.availableMode(mode, defaults: defaults)
         guard storedMode != nextMode else {
             if defaults.string(forKey: Self.modeKey) != nextMode.rawValue {
