@@ -1,6 +1,7 @@
 import CmuxCloud
 import AppKit
 import CmuxAuthRuntime
+import CmuxFilePreviewCore
 import Testing
 
 #if canImport(cmux_DEV)
