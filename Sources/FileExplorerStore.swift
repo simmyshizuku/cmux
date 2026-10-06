@@ -990,15 +990,25 @@ final class FileExplorerStore: ObservableObject {
 
     private func updateDirectoryWatcher() {
         if provider is LocalFileExplorerProvider, !rootPath.isEmpty {
-            guard directoryWatchPath != rootPath || directoryWatcher == nil else { return }
+            guard directoryWatchPath != rootPath || directoryWatchTask == nil else { return }
             stopDirectoryWatcher()
-            guard let watcher = RecursivePathWatcher(paths: [rootPath]) else { return }
-            directoryWatcher = watcher
-            directoryWatchPath = rootPath
-            let scope = FileExplorerChangeScope(rootPath: rootPath)
-            let changes = watcher.pathEvents
+            let watchedPath = rootPath
+            directoryWatchPath = watchedPath
+            let scope = FileExplorerChangeScope(rootPath: watchedPath)
             directoryWatchTask = Task { @MainActor [weak self] in
-                for await change in changes {
+                // The watcher registers with the OS off this actor before it returns.
+                guard let watcher = await RecursivePathWatcher(paths: [watchedPath]) else {
+                    // Leave no record, so the next root sync retries the registration.
+                    if let self, !Task.isCancelled, self.directoryWatchPath == watchedPath {
+                        self.stopDirectoryWatcher()
+                    }
+                    return
+                }
+                do {
+                    guard let self, !Task.isCancelled, self.directoryWatchPath == watchedPath else { return }
+                    self.directoryWatcher = watcher
+                }
+                for await change in watcher.pathEvents {
                     guard let self else { break }
                     self.applyFilesystemChange(change, scope: scope)
                 }

@@ -1,5 +1,6 @@
 import AppKit
 import Bonsplit
+import CmuxFilePreviewCore
 
 /// Both sidebar entrypoints capture the displayed provider before suspending.
 @MainActor
