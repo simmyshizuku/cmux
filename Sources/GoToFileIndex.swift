@@ -2,6 +2,7 @@ import Foundation
 
 struct GoToFileEntry: Equatable, Sendable {
     let relativePath: String
+    var isDirectory = false
 
     var name: String { (relativePath as NSString).lastPathComponent }
 
@@ -21,9 +22,21 @@ struct GoToFileEntry: Equatable, Sendable {
     func absolutePath(in rootPath: String) -> String {
         (rootPath as NSString).appendingPathComponent(relativePath)
     }
+
+    /// Every folder that holds one of `files`, so folders follow the same ignore rules.
+    static func directories(containing files: [GoToFileEntry]) -> [GoToFileEntry] {
+        var seen = Set<String>()
+        for file in files {
+            var directory = (file.relativePath as NSString).deletingLastPathComponent
+            while !directory.isEmpty, seen.insert(directory).inserted {
+                directory = (directory as NSString).deletingLastPathComponent
+            }
+        }
+        return seen.map { GoToFileEntry(relativePath: $0, isDirectory: true) }
+    }
 }
 
-/// Lists files for the palette with ripgrep so repository ignore rules apply.
+/// Lists files and their folders for the palette with ripgrep so repository ignore rules apply.
 actor GoToFileIndex {
     private let executable: FileSearchRipgrepExecutable
     private let maximumFiles: Int
@@ -93,7 +106,7 @@ actor GoToFileIndex {
                 throw GoToFileIndexError.ripgrepFailed(process.terminationStatus)
             }
         }
-        return entries.sorted {
+        return (entries + GoToFileEntry.directories(containing: entries)).sorted {
             $0.relativePath.localizedStandardCompare($1.relativePath) == .orderedAscending
         }
     }

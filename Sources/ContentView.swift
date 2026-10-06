@@ -2384,6 +2384,14 @@ struct ContentView: View {
             workspace: workspace, pane: paneId, isCurrent: { tabManager.selectedTabId == workspace.id })
     }
 
+    /// Shows the Files sidebar with the folder at `path` expanded and selected.
+    private func revealFolderInFileExplorer(path: String) {
+        handleCommandPaletteRightSidebarMode(.files, observedWindow: observedWindow)
+        // The tree has no root while the sidebar is hidden; give it one before revealing.
+        syncFileExplorerDirectory()
+        fileExplorerStore.revealDirectory(at: path)
+    }
+
     private func syncFileExplorerDirectory() {
         guard let selectedId = tabManager.selectedTabId,
               let tab = tabManager.tabs.first(where: { $0.id == selectedId }) else {
@@ -5224,18 +5232,26 @@ struct ContentView: View {
             return commandPaletteCommands(commandsContext: commandsContext ?? commandPaletteCachedCommandsContext())
         case .files:
             guard let rootPath = goToFileRootPath else { return [] }
+            let folderKindLabel = String(localized: "commandPalette.kind.folder", defaultValue: "Folder")
             return goToFileEntries.enumerated().map { rank, file in
                 let path = file.absolutePath(in: rootPath)
+                let isDirectory = file.isDirectory
                 return CommandPaletteCommand(
                     id: "file.\(path)",
                     rank: rank,
                     title: file.name,
                     subtitle: file.relativePath,
                     shortcutHint: nil,
-                    kindLabel: nil,
+                    kindLabel: isDirectory ? folderKindLabel : nil,
                     keywords: file.searchKeywords,
                     dismissOnRun: true,
-                    action: { openFilePreviewFromSidebar(filePath: path) }
+                    action: {
+                        if isDirectory {
+                            revealFolderInFileExplorer(path: path)
+                        } else {
+                            openFilePreviewFromSidebar(filePath: path)
+                        }
+                    }
                 )
             }
         case .switcher:

@@ -300,4 +300,25 @@ struct GoToFileIndexTests {
                 == root.appendingPathComponent("Sources/PaletteView.swift").path
         )
     }
+
+    @Test func listsEveryFolderThatHoldsAListedFile() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        for folder in ["Sources/UI", "Empty", "ignored"] {
+            try FileManager.default.createDirectory(at: root.appendingPathComponent(folder), withIntermediateDirectories: true)
+        }
+        try Data().write(to: root.appendingPathComponent("Sources/UI/PaletteView.swift"))
+        try Data().write(to: root.appendingPathComponent("ignored/skip.txt"))
+        try Data("ignored/\n".utf8).write(to: root.appendingPathComponent(".gitignore"))
+
+        let executable = try #require(RipgrepExecutableResolver.resolve(configuredPath: nil))
+        let entries = try await GoToFileIndex(executable: executable).files(in: root.path)
+
+        #expect(entries.filter(\.isDirectory).map(\.relativePath) == ["Sources", "Sources/UI"])
+        #expect(entries.first { $0.relativePath == "Sources/UI/PaletteView.swift" }?.isDirectory == false)
+        #expect(
+            entries.first { $0.relativePath == "Sources/UI" }?.absolutePath(in: root.path)
+                == root.appendingPathComponent("Sources/UI").path
+        )
+    }
 }

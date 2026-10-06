@@ -244,7 +244,20 @@ struct FileExplorerPanelView: NSViewRepresentable {
                     reloadVisibleRows(in: outlineView)
                 }
                 applyStoredSelection(in: outlineView, fallbackToFirstVisible: false, scroll: false)
+                scrollToRevealedDirectoryIfLoaded(in: outlineView)
             }
+        }
+
+        /// Scrolls a revealed folder into view with as many of its children as fit.
+        private func scrollToRevealedDirectoryIfLoaded(in outlineView: NSOutlineView) {
+            guard let path = store.revealTargetPath,
+                  let resolution = selectionResolution(for: path, in: outlineView), resolution.isExact,
+                  let node = outlineView.item(atRow: resolution.row) as? FileExplorerNode,
+                  !node.isLoading else { return }
+            store.finishReveal()
+            let childCount = outlineView.isItemExpanded(node) ? outlineView.numberOfChildren(ofItem: node) : 0
+            outlineView.scrollRowToVisible(min(resolution.row + childCount, outlineView.numberOfRows - 1))
+            outlineView.scrollRowToVisible(resolution.row)
         }
 
         /// Reconfigures the rows on screen. Rows that kept their node across a
@@ -282,7 +295,10 @@ struct FileExplorerPanelView: NSViewRepresentable {
         }
 
         private func refreshLoadedNodes(in outlineView: NSOutlineView) {
-            for row in 0..<outlineView.numberOfRows {
+            // Expanding a row can reveal descendants, so re-read the row count each iteration.
+            var row = 0
+            while row < outlineView.numberOfRows {
+                defer { row += 1 }
                 guard let node = outlineView.item(atRow: row) as? FileExplorerNode else { continue }
                 if node.isDirectory {
                     let isCurrentlyExpanded = outlineView.isItemExpanded(node)

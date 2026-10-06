@@ -815,6 +815,9 @@ final class FileExplorerStore: ObservableObject {
     /// Folder path whose first child should be selected once its async load completes.
     private var pendingDescendIntoFirstChildPath: String?
 
+    /// Folder the outline scrolls to once its row exists and has loaded.
+    private var pendingRevealPath: String?
+
     /// Paths currently being loaded
     private(set) var loadingPaths: Set<String> = []
 
@@ -1272,6 +1275,7 @@ final class FileExplorerStore: ObservableObject {
         guard selectedPath != path || selectedPaths != paths else { return }
         selectedPath = path
         selectedPaths = paths
+        pendingRevealPath = nil
         if path != pendingDescendIntoFirstChildPath {
             pendingDescendIntoFirstChildPath = nil
         }
@@ -1283,6 +1287,7 @@ final class FileExplorerStore: ObservableObject {
         guard selectedPath != path || selectedPaths != paths else { return }
         selectedPath = path
         selectedPaths = paths
+        pendingRevealPath = nil
         if path != pendingDescendIntoFirstChildPath {
             pendingDescendIntoFirstChildPath = nil
         }
@@ -1294,6 +1299,40 @@ final class FileExplorerStore: ObservableObject {
         selectedPaths = [node.path]
         pendingDescendIntoFirstChildPath = node.path
         expand(node: node)
+    }
+
+    /// Expands every folder from the root down to `path` and selects `path`.
+    /// Folders that are not loaded yet expand as their parents finish loading.
+    func revealDirectory(at path: String) {
+        guard path != rootPath, Self.path(path, isContainedIn: rootPath) else { return }
+        var chain: [String] = []
+        var current = path
+        while current != rootPath, Self.path(current, isContainedIn: rootPath) {
+            chain.append(current)
+            current = (current as NSString).deletingLastPathComponent
+        }
+        expandedPaths.formUnion(chain)
+        selectedPath = path
+        selectedPaths = [path]
+        pendingDescendIntoFirstChildPath = nil
+        pendingRevealPath = path
+        var siblings = rootNodes
+        for ancestor in chain.reversed() {
+            guard let node = siblings.first(where: { $0.path == ancestor }), node.isDirectory else { break }
+            expand(node: node)
+            guard let children = node.children else { break }
+            siblings = children
+        }
+        objectWillChange.send()
+    }
+
+    /// The folder a reveal still has to scroll to, while it remains the selection.
+    var revealTargetPath: String? {
+        pendingRevealPath == selectedPath ? pendingRevealPath : nil
+    }
+
+    func finishReveal() {
+        pendingRevealPath = nil
     }
 
     func prefetchChildren(for node: FileExplorerNode) {

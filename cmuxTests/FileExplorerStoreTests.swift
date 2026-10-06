@@ -759,6 +759,118 @@ struct FileExplorerStoreTests {
         #expect(!(store.isExpanded(node)))
     }
 
+    // MARK: - Reveal
+
+    private static let revealRoot = "/home/user/project"
+    private static let revealApp = "\(revealRoot)/App"
+    private static let revealSources = "\(revealApp)/Sources"
+    private static let revealUI = "\(revealSources)/UI"
+
+    /// `App/Sources/UI/View.swift`, with nothing listed until the store asks.
+    private func makeRevealProvider() -> MockFileExplorerProvider {
+        let provider = MockFileExplorerProvider()
+        provider.listings[Self.revealRoot] = .success([
+            FileExplorerEntry(name: "App", path: Self.revealApp, isDirectory: true),
+        ])
+        provider.listings[Self.revealApp] = .success([
+            FileExplorerEntry(name: "Sources", path: Self.revealSources, isDirectory: true),
+        ])
+        provider.listings[Self.revealSources] = .success([
+            FileExplorerEntry(name: "UI", path: Self.revealUI, isDirectory: true),
+        ])
+        provider.listings[Self.revealUI] = .success([
+            FileExplorerEntry(name: "View.swift", path: "\(Self.revealUI)/View.swift", isDirectory: false),
+        ])
+        return provider
+    }
+
+    private func visibleNames(in outlineView: NSOutlineView) -> [String] {
+        (0..<outlineView.numberOfRows).compactMap { (outlineView.item(atRow: $0) as? FileExplorerNode)?.name }
+    }
+
+    @Test
+    func testRevealDirectoryExpandsUnloadedAncestorsAndSelectsIt() async throws {
+        let store = FileExplorerStore()
+        store.setProviderForTesting(makeRevealProvider())
+        store.setRootPath(Self.revealRoot)
+        // The palette reveals right after showing the sidebar, before the root has listed.
+        store.revealDirectory(at: Self.revealUI)
+        try await waitFor("revealed folder loaded") {
+            store.rootNodes.first?.children?.first?.children?.first?.children?.count == 1
+        }
+
+        #expect(store.expandedPaths == [Self.revealApp, Self.revealSources, Self.revealUI])
+        #expect(store.selectedPath == Self.revealUI)
+        #expect(store.revealTargetPath == Self.revealUI)
+
+        let coordinator = FileExplorerPanelView.Coordinator(
+            store: store,
+            state: FileExplorerState(),
+            onOpenFilePreview: { _ in }
+        )
+        let container = FileExplorerContainerView(coordinator: coordinator, presentation: .files)
+        coordinator.reloadIfNeeded()
+        let outlineView = try #require(coordinator.outlineView)
+
+        let selectedNames = outlineView.selectedRowIndexes.compactMap {
+            (outlineView.item(atRow: $0) as? FileExplorerNode)?.name
+        }
+        #expect(visibleNames(in: outlineView) == ["App", "Sources", "UI", "View.swift"])
+        #expect(selectedNames == ["UI"])
+        #expect(store.revealTargetPath == nil)
+        withExtendedLifetime(container) {}
+    }
+
+    @Test
+    func testRevealDirectoryExpandsLoadedButCollapsedAncestorsInOutline() async throws {
+        let store = FileExplorerStore()
+        store.setProviderForTesting(makeRevealProvider())
+        store.setRootPath(Self.revealRoot)
+        try await waitFor("root loaded") { store.rootNodes.count == 1 }
+        let app = try #require(store.rootNodes.first)
+        store.expand(node: app)
+        try await waitFor("App loaded") { app.children?.count == 1 }
+        let sources = try #require(app.children?.first)
+        store.expand(node: sources)
+        try await waitFor("Sources loaded") { sources.children?.count == 1 }
+        store.collapse(node: sources)
+        store.collapse(node: app)
+
+        let coordinator = FileExplorerPanelView.Coordinator(
+            store: store,
+            state: FileExplorerState(),
+            onOpenFilePreview: { _ in }
+        )
+        let container = FileExplorerContainerView(coordinator: coordinator, presentation: .files)
+        coordinator.reloadIfNeeded()
+        let outlineView = try #require(coordinator.outlineView)
+        #expect(visibleNames(in: outlineView) == ["App"])
+
+        store.revealDirectory(at: Self.revealUI)
+        try await waitFor("UI loaded") { sources.children?.first?.children?.count == 1 }
+        coordinator.reloadIfNeeded()
+
+        #expect(visibleNames(in: outlineView) == ["App", "Sources", "UI", "View.swift"])
+        #expect(store.selectedPath == Self.revealUI)
+        withExtendedLifetime(container) {}
+    }
+
+    @Test
+    func testRevealDirectoryOutsideRootIsIgnored() async throws {
+        let store = FileExplorerStore()
+        store.setProviderForTesting(makeRevealProvider())
+        store.setRootPath(Self.revealRoot)
+        try await waitFor("root loaded") { store.rootNodes.count == 1 }
+        let selectedPath = store.selectedPath
+
+        store.revealDirectory(at: "/home/user/elsewhere")
+        store.revealDirectory(at: Self.revealRoot)
+
+        #expect(store.expandedPaths.isEmpty)
+        #expect(store.selectedPath == selectedPath)
+        #expect(store.revealTargetPath == nil)
+    }
+
     // MARK: - Filesystem changes
 
     private static let changeRoot = "/home/user/project"
