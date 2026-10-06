@@ -878,7 +878,8 @@ extension Workspace {
             agentSession: agentSessionSnapshot,
             project: projectSnapshot,
             workspaceTodo: workspaceTodoSnapshot,
-            notificationsPanel: notificationsPanelSnapshot
+            notificationsPanel: notificationsPanelSnapshot,
+            rightSidebarVisible: rightSidebarTabVisibility.visibility(forPanelId: panelId)
         )
     }
     private func closedPanelHistoryEntry(panelId: UUID, tabId: TabID, pane: PaneID) -> ClosedPanelHistoryEntry? {
@@ -2378,6 +2379,9 @@ extension Workspace {
 
         setPanelCustomTitle(panelId: panelId, title: snapshot.customTitle, source: snapshot.effectiveCustomTitleSource ?? .user, propagateToCloud: false)
         setPanelPinned(panelId: panelId, pinned: snapshot.isPinned)
+        if let rightSidebarVisible = snapshot.rightSidebarVisible {
+            rightSidebarTabVisibility.record(rightSidebarVisible, forPanelId: panelId)
+        }
 
         // The bonsplit tab header only refreshes when `updateTab` is called; the writes
         // above never reach it (`setPanelCustomTitle` skips the sync when there is no
@@ -3038,6 +3042,8 @@ final class Workspace: Identifiable, ObservableObject, FilePreviewTabMetadataHos
     var panelCustomTitleSources: [UUID: CustomTitleSource] = [:]
     @Published var pinnedPanelIds: Set<UUID> = []
     var pinMutationTokensByPanelId: [UUID: UUID] = [:]
+    /// Whether the right sidebar is shown, remembered per tab in this workspace.
+    let rightSidebarTabVisibility = RightSidebarTabVisibilityMemory()
     let panelUnread = WorkspacePanelUnreadModel()
     var manualUnreadPanelIds: Set<UUID> {
         get { panelUnread.panelIds }

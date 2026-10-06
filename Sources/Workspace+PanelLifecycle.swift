@@ -531,6 +531,7 @@ extension Workspace {
         panelCustomTitleSources.removeValue(forKey: panelId)
         pinnedPanelIds.remove(panelId)
         pinMutationTokensByPanelId.removeValue(forKey: panelId)
+        rightSidebarTabVisibility.forget(panelId: panelId)
         manualUnreadPanelIds.remove(panelId)
         manualUnreadMarkedAt.removeValue(forKey: panelId)
         panelShellActivityStates.removeValue(forKey: panelId)

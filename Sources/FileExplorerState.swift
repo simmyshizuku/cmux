@@ -8,8 +8,18 @@ final class FileExplorerState: ObservableObject {
     private static let customSidebarNameKey = "rightSidebar.customSidebarName"
 
     @Published var isVisible: Bool {
-        didSet { UserDefaults.standard.set(isVisible, forKey: "fileExplorer.isVisible") }
+        didSet {
+            UserDefaults.standard.set(isVisible, forKey: "fileExplorer.isVisible")
+            if let activeTabId {
+                activeTabVisibilityMemory?.record(isVisible, forPanelId: activeTabId)
+            }
+        }
     }
+
+    /// The focused tab whose remembered show/hide state `isVisible` mirrors.
+    /// Runtime-only; the memory itself is owned and persisted by the tab's workspace.
+    private(set) var activeTabId: UUID?
+    private weak var activeTabVisibilityMemory: RightSidebarTabVisibilityMemory?
     @Published var width: CGFloat {
         didSet { UserDefaults.standard.set(Double(width), forKey: "fileExplorer.width") }
     }
@@ -85,6 +95,20 @@ final class FileExplorerState: ObservableObject {
 
     func toggle() {
         setVisible(!isVisible)
+    }
+
+    /// Hands the show/hide state to the tab `panelId` and applies what that tab
+    /// remembers. A tab with no memory keeps the current state and records it,
+    /// so a new tab inherits from the tab it was opened from.
+    func activateTab(panelId: UUID, memory: RightSidebarTabVisibilityMemory) {
+        guard activeTabId != panelId || activeTabVisibilityMemory !== memory else { return }
+        activeTabId = panelId
+        activeTabVisibilityMemory = memory
+        if let remembered = memory.visibility(forPanelId: panelId) {
+            setVisible(remembered)
+        } else {
+            memory.record(isVisible, forPanelId: panelId)
+        }
     }
 
     func setVisible(_ nextValue: Bool) {

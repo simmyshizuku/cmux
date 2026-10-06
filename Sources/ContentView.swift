@@ -2554,6 +2554,14 @@ struct ContentView: View {
         fileExplorerStore.applyWorkspaceRoot(.local(workspaceId: tab.id, path: dir))
     }
 
+    /// Hands the right sidebar's show/hide state to the focused tab of the
+    /// selected workspace, restoring what that tab remembers.
+    private func syncRightSidebarVisibilityToFocusedTab() {
+        guard let workspace = tabManager.selectedWorkspace,
+              let panelId = workspace.focusedPanelId else { return }
+        fileExplorerState.activateTab(panelId: panelId, memory: workspace.rightSidebarTabVisibility)
+    }
+
     private var shouldSyncFileExplorerStore: Bool {
         FileExplorerRootSyncPolicy.shouldSyncFileExplorerStore(
             isRightSidebarVisible: fileExplorerState.isVisible,
@@ -2750,6 +2758,7 @@ struct ContentView: View {
                 }
             }
             selectedWorkspaceDirectoryObserver.wire(tabManager: tabManager)
+            syncRightSidebarVisibilityToFocusedTab()
             tabManager.applyWindowBackgroundForSelectedTab()
             reconcileMountedWorkspaceIds()
             previousSelectedWorkspaceId = tabManager.selectedTabId
@@ -2851,6 +2860,7 @@ struct ContentView: View {
                 )
             }
             reconcileMountedWorkspaceIds(selectedId: authoritativeSelection)
+            syncRightSidebarVisibilityToFocusedTab()
             AppDelegate.shared?.syncBonsplitTabShortcutHintEligibility(in: observedWindow)
             guard let authoritativeSelection else { return }
             if selectedTabIds.count <= 1 {
@@ -2938,6 +2948,7 @@ struct ContentView: View {
                 clearWorkspaceSwitchPortalSignalsIfFinished()
             }
             let focusTransactionId = notification.userInfo?[GhosttyNotificationKey.focusTransactionId] as? UUID
+            syncRightSidebarVisibilityToFocusedTab()
             refreshTmuxWorkspacePaneWindowOverlay(in: observedWindow)
             attemptCommandPaletteFocusRestoreIfNeeded(focusTransactionId: focusTransactionId)
             scheduleTitlebarTextRefresh()

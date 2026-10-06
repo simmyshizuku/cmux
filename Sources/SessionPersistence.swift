@@ -1644,6 +1644,10 @@ struct SessionPanelSnapshot: Codable, Sendable {
     var project: SessionProjectPanelSnapshot?
     var workspaceTodo: SessionWorkspaceTodoPanelSnapshot? = nil
     var notificationsPanel: SessionNotificationsPanelSnapshot? = nil
+    /// Whether the right sidebar is shown while this tab is focused. Absent in
+    /// older snapshots and for tabs that were never focused; the tab then
+    /// inherits the state showing when it is first focused.
+    var rightSidebarVisible: Bool? = nil
 }
 extension SessionPanelSnapshot: WorkspaceSessionRemoteRestorePanelSnapshot {}
 
