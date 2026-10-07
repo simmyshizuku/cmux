@@ -11852,6 +11852,12 @@ final class GhosttySurfaceScrollView: NSView {
             onClose: { [weak self, weak terminalSurface] in
                 terminalSurface?.closeSearchFromExplicitInput()
                 self?.moveFocus()
+            },
+            makeFilterSource: { [weak terminalSurface] in
+                TerminalSurfaceLineFilterSource(terminalSurface: terminalSurface)
+            },
+            makeFilterAppearance: { [weak terminalSurface] in
+                TerminalLineFilterAppearance(terminalSurface: terminalSurface)
             }
         )
         .cmuxAccentColorEnvironment()

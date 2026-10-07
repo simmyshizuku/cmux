@@ -3,6 +3,7 @@ import AppKit
 import Bonsplit
 import SwiftUI
 import CmuxTerminal
+import CmuxTerminalCore
 
 private extension NSView {
     func cmuxAncestor<T: NSView>(of type: T.Type) -> T? {
@@ -31,11 +32,16 @@ struct SurfaceSearchOverlay: View {
     let onSearchTextChanged: () -> Void
     let onFieldDidFocus: () -> Void
     let onClose: () -> Void
+    let makeFilterSource: () -> any TerminalLineFilterSource
+    let makeFilterAppearance: () -> TerminalLineFilterAppearance
     @State private var corner: Corner = .topRight
     @State private var dragOffset: CGSize = .zero
     @State private var barSize: CGSize = .zero
     @State private var isSearchFieldFocused: Bool = true
     @State private var isSearchFieldEditing: Bool = false
+    /// Non-nil while the filter is on: the pane shows only matching lines.
+    @State private var filterModel: TerminalLineFilterModel?
+    @State private var filterAppearance: TerminalLineFilterAppearance?
 
     private let padding: CGFloat = 8
 
@@ -59,7 +65,8 @@ struct SurfaceSearchOverlay: View {
                     },
                     onReturn: { isShift in
                         onNavigateSearch(isShift ? .previous : .next)
-                    }
+                    },
+                    onToggleFilter: toggleFilter
                 )
                 .accessibilityIdentifier("TerminalFindSearchTextField")
                 .frame(width: 180)
@@ -88,6 +95,18 @@ struct SurfaceSearchOverlay: View {
                             .padding(.trailing, 8)
                     }
                 }
+
+                Button(action: toggleFilter) {
+                    Image(systemName: "line.3.horizontal.decrease")
+                }
+                .buttonStyle(SearchButtonStyle())
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(cmuxAccent.color.opacity(filterModel == nil ? 0 : 0.3))
+                )
+                .accessibilityIdentifier("TerminalFindFilterToggle")
+                .accessibilityAddTraits(filterModel == nil ? [] : .isSelected)
+                .safeHelp(String(localized: "search.filter.toggle.help", defaultValue: "Show only matching lines (⌥⌘L)"))
 
                 Button(action: {
                     #if DEBUG
@@ -160,7 +179,75 @@ struct SurfaceSearchOverlay: View {
                         }
                     }
             )
+            // Behind the bar and outside its drag gesture, so the list scrolls
+            // and takes clicks without moving the bar.
+            .background { filterList }
+            .onChange(of: searchState.needle) { _, needle in
+                filterModel?.update(needle: needle)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .ghosttyDidUpdateScrollbar)) { notification in
+                guard let filterModel,
+                      (notification.object as? GhosttyNSView)?.terminalSurface?.id == surfaceId else { return }
+                filterModel.refresh()
+            }
+            .task(id: filterModel == nil) {
+                // The scrollbar only reports rows scrolling into history. Text
+                // rewritten in place on the active screen needs a slow reread.
+                guard filterModel != nil else { return }
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(1))
+                    filterModel?.refresh()
+                }
+            }
+            .onDisappear {
+                filterModel?.stop()
+                filterModel = nil
+            }
         }
+    }
+
+    @ViewBuilder
+    private var filterList: some View {
+        if let filterModel, let filterAppearance {
+            TerminalLineFilterListView(
+                lines: filterModel.lines,
+                isNeedleEmpty: searchState.needle.isEmpty,
+                isScanning: filterModel.isScanning,
+                isTruncated: filterModel.isTruncated,
+                appearance: filterAppearance,
+                accent: cmuxAccent.color,
+                findBarEdge: corner.isTop ? .top : .bottom,
+                onReveal: reveal
+            )
+        }
+    }
+
+    private func toggleFilter() {
+        if let filterModel {
+            #if DEBUG
+            cmuxDebugLog("findbar.filter.off surface=\(surfaceId.uuidString.prefix(5))")
+            #endif
+            filterModel.stop()
+            self.filterModel = nil
+        } else {
+            #if DEBUG
+            cmuxDebugLog("findbar.filter.on surface=\(surfaceId.uuidString.prefix(5))")
+            #endif
+            let model = TerminalLineFilterModel(source: makeFilterSource())
+            model.start()
+            model.update(needle: searchState.needle)
+            filterAppearance = makeFilterAppearance()
+            filterModel = model
+        }
+        isSearchFieldFocused = true
+    }
+
+    /// Scrolls the terminal to a filtered line and uncovers it. Find stays
+    /// open, so the match is still highlighted in context.
+    private func reveal(_ line: TerminalLineFilterLine) {
+        guard let filterModel, filterModel.reveal(line) else { return }
+        filterModel.stop()
+        self.filterModel = nil
     }
 
     private var clipShape: some Shape {
@@ -180,6 +267,10 @@ struct SurfaceSearchOverlay: View {
             case .bottomLeft: return .bottomLeading
             case .bottomRight: return .bottomTrailing
             }
+        }
+
+        var isTop: Bool {
+            self == .topLeft || self == .topRight
         }
     }
 
@@ -228,6 +319,21 @@ private final class SearchNativeTextField: FindSelectionTrackingTextField {
         fatalError("init(coder:) has not been implemented")
     }
 
+    var cmuxOnToggleFilter: (() -> Void)?
+
+    /// Handles ⌥⌘L (filter) while the field is being edited.
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard event.type == .keyDown,
+              event.modifierFlags.intersection([.command, .option, .control, .shift]) == [.command, .option],
+              let window,
+              cmuxTextFieldIsFirstResponder(self, in: window),
+              KeyboardLayout.normalizedCharacters(for: event) == "l",
+              let cmuxOnToggleFilter else {
+            return super.performKeyEquivalent(with: event)
+        }
+        cmuxOnToggleFilter()
+        return true
+    }
 }
 
 /// NSViewRepresentable wrapping SearchNativeTextField.
@@ -247,6 +353,7 @@ private struct SearchTextFieldRepresentable: NSViewRepresentable {
     let onEditingChanged: (Bool) -> Void
     let onEscape: () -> Void
     let onReturn: (_ isShift: Bool) -> Void
+    let onToggleFilter: () -> Void
     @Environment(\.cmuxGlobalFontMagnificationPercent) private var globalFontPercent
 
     final class Coordinator: NSObject, NSTextFieldDelegate {
@@ -380,6 +487,7 @@ private struct SearchTextFieldRepresentable: NSViewRepresentable {
         field.delegate = context.coordinator
         field.cmuxSelectionOwner = selectionOwner
         field.cmuxOnEscape = { [weak coordinator = context.coordinator] textView in coordinator?.handleEscape(from: textView) ?? false }
+        field.cmuxOnToggleFilter = { [weak coordinator = context.coordinator] in coordinator?.parent.onToggleFilter() }
         field.stringValue = text
         context.coordinator.parentField = field
 
@@ -425,6 +533,7 @@ private struct SearchTextFieldRepresentable: NSViewRepresentable {
         nsView.delegate = context.coordinator
         nsView.cmuxSelectionOwner = selectionOwner
         nsView.cmuxOnEscape = { [weak coordinator = context.coordinator] textView in coordinator?.handleEscape(from: textView) ?? false }
+        nsView.cmuxOnToggleFilter = { [weak coordinator = context.coordinator] in coordinator?.parent.onToggleFilter() }
         nsView.font = GlobalFontMagnification.systemFont(ofSize: NSFont.systemFontSize)
 
         // Sync text from binding to field (skip during active IME composition)
@@ -474,6 +583,7 @@ private struct SearchTextFieldRepresentable: NSViewRepresentable {
         nsView.delegate = nil
         nsView.cmuxSelectionOwner = nil
         nsView.cmuxOnEscape = nil
+        nsView.cmuxOnToggleFilter = nil
         coordinator.parentField = nil
     }
 }
