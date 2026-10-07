@@ -17,6 +17,24 @@ struct TerminalLineFilterRowLocator {
         of line: TerminalLineFilterLine,
         text: (ClosedRange<UInt64>) -> String?
     ) -> UInt64? {
-        nil
+        let chunkTop = line.chunkRows.lowerBound
+        // The line starts on the first row whose prefix already contains it.
+        let neededLineCount = line.lineIndex + 1
+        var low = chunkTop
+        var high = line.chunkRows.upperBound
+        guard let chunkText = text(chunkTop...high),
+              matcher.lineCount(in: chunkText) >= neededLineCount else {
+            return nil
+        }
+        while low < high {
+            let middle = low + (high - low) / 2
+            guard let prefix = text(chunkTop...middle) else { return nil }
+            if matcher.lineCount(in: prefix) >= neededLineCount {
+                high = middle
+            } else {
+                low = middle + 1
+            }
+        }
+        return low
     }
 }
